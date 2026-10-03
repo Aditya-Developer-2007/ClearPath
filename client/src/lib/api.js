@@ -109,4 +109,34 @@ export const submitApplicationAPI = async (data) => {
   return api.post('/applications', data);
 };
 
+export const getMyApplicationsAPI = async () => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          data: {
+            applications: [
+              {
+                id: 'APP-001',
+                sector: 'Textile unit',
+                city: 'Surat',
+                approvalRequests: [
+                  { id: 'req1', name: 'Factory Licence', department: 'Industrial', status: 'approved', assignedOfficerName: 'R. Sharma', deskNo: '4', lastActionAt: new Date(Date.now() - 5*86400000).toISOString(), slaDeadline: new Date(Date.now() + 5*86400000).toISOString(), escalated: false, riskTier: 'medium', needsInspection: false },
+                  { id: 'req2', name: 'Fire NOC', department: 'Safety', status: 'under_review', assignedOfficerName: 'A. Gupta', deskNo: '2', lastActionAt: new Date(Date.now() - 2*86400000).toISOString(), slaDeadline: new Date(Date.now() - 2*86400000).toISOString(), escalated: true, riskTier: 'high', needsInspection: true },
+                  { id: 'req3', name: 'Pollution Consent', department: 'Environment', status: 'not_started', assignedOfficerName: null, deskNo: null, lastActionAt: null, slaDeadline: new Date(Date.now() + 15*86400000).toISOString(), escalated: false, riskTier: 'high', needsInspection: true },
+                  { id: 'req4', name: 'Labour Registration', department: 'Labour', status: 'query_raised', assignedOfficerName: 'M. Patel', deskNo: '1', lastActionAt: new Date(Date.now() - 1*86400000).toISOString(), slaDeadline: new Date(Date.now() + 3*86400000).toISOString(), escalated: false, riskTier: 'low', needsInspection: false },
+                  { id: 'req5', name: 'Electricity Connection', department: 'Utilities', status: 'submitted', assignedOfficerName: 'K. Desai', deskNo: '5', lastActionAt: new Date(Date.now() - 1*86400000).toISOString(), slaDeadline: new Date(Date.now() + 7*86400000).toISOString(), escalated: false, riskTier: 'medium', needsInspection: false },
+                  { id: 'req6', name: 'Udyam Registration', department: 'MSME', status: 'rejected', assignedOfficerName: 'S. Singh', deskNo: '3', lastActionAt: new Date(Date.now() - 10*86400000).toISOString(), slaDeadline: new Date(Date.now() - 1*86400000).toISOString(), escalated: false, riskTier: 'low', needsInspection: false },
+                  { id: 'req7', name: 'Professional Tax', department: 'Finance', status: 'approved', assignedOfficerName: 'V. Kumar', deskNo: '8', lastActionAt: new Date(Date.now() - 15*86400000).toISOString(), slaDeadline: new Date(Date.now() + 10*86400000).toISOString(), escalated: false, riskTier: 'low', needsInspection: false },
+                ]
+              }
+            ]
+          }
+        });
+      }, 800);
+    });
+  }
+  return api.get('/applications/mine');
+};
+
 export default api;
