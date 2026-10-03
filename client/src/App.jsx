@@ -5,7 +5,11 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './layouts/AppShell';
 
 const Login = React.lazy(() => import('./pages/public/Login'));
+const Landing = React.lazy(() => import('./pages/public/Landing'));
+const Wizard = React.lazy(() => import('./pages/public/Wizard'));
+const ChecklistResult = React.lazy(() => import('./pages/public/ChecklistResult'));
 const DevComponents = React.lazy(() => import('./pages/public/DevComponents'));
+const NotFound = React.lazy(() => import('./pages/public/NotFound'));
 const ApplicantDashboard = React.lazy(() => import('./pages/applicant/Dashboard'));
 const OfficerDashboard = React.lazy(() => import('./pages/officer/Dashboard'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
@@ -27,28 +31,38 @@ export default function App() {
       <BrowserRouter>
         <Suspense fallback={<Loader />}>
           <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/start" element={<Wizard />} />
+            <Route path="/result" element={<ChecklistResult />} />
             <Route path="/login" element={<Login />} />
             
-            <Route path="/" element={<AppShell />}>
+            <Route element={<AppShell />}>
+              <Route path="/dev/components" element={<DevComponents />} />
+            </Route>
+            
+            <Route path="/app" element={<AppShell />}>
               <Route index element={<RootRedirect />} />
-              <Route path="dev/components" element={<DevComponents />} />
               
-              <Route path="app/dashboard" element={
+              <Route path="dashboard" element={
                 <ProtectedRoute allowedRoles={['applicant']}><ApplicantDashboard /></ProtectedRoute>
               } />
-              {/* Add dummy routes so links work without 404 */}
-              <Route path="app/*" element={<ProtectedRoute allowedRoles={['applicant']}><div>Placeholder</div></ProtectedRoute>} />
+              <Route path="*" element={<ProtectedRoute allowedRoles={['applicant']}><div>Placeholder</div></ProtectedRoute>} />
               
-              <Route path="officer/queue" element={
+            </Route>
+            <Route path="/officer" element={<AppShell />}>
+              <Route path="queue" element={
                 <ProtectedRoute allowedRoles={['officer']}><OfficerDashboard /></ProtectedRoute>
               } />
-              <Route path="officer/*" element={<ProtectedRoute allowedRoles={['officer']}><div>Placeholder</div></ProtectedRoute>} />
-              
-              <Route path="admin/analytics" element={
+              <Route path="*" element={<ProtectedRoute allowedRoles={['officer']}><div>Placeholder</div></ProtectedRoute>} />
+            </Route>
+            <Route path="/admin" element={<AppShell />}>
+              <Route path="analytics" element={
                 <ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>
               } />
-              <Route path="admin/*" element={<ProtectedRoute allowedRoles={['admin']}><div>Placeholder</div></ProtectedRoute>} />
+              <Route path="*" element={<ProtectedRoute allowedRoles={['admin']}><div>Placeholder</div></ProtectedRoute>} />
             </Route>
+
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </BrowserRouter>
