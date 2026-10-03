@@ -189,7 +189,7 @@ export default function ApplicantDashboard() {
       )}
 
       {/* Main Content */}
-      <div className="mt-8">
+      <div className="mt-8 overflow-visible">
         {view === 'cards' ? (
           <div className="space-y-4">
             {sortedReqs.map(r => {
@@ -237,8 +237,8 @@ export default function ApplicantDashboard() {
             })}
           </div>
         ) : (
-          <div>
-            <div className="w-full flex flex-col gap-8 pt-4">
+          <div className="overflow-visible">
+            <div className="w-full flex flex-col gap-8 pt-4 overflow-visible">
               {sortedReqs.map((r, i) => {
                 const sla = getSLA(r);
                 let currentStation = 0;
