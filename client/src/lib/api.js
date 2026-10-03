@@ -109,34 +109,156 @@ export const submitApplicationAPI = async (data) => {
   return api.post('/applications', data);
 };
 
+let myApplicationsCache = {
+  applications: [
+    {
+      id: 'APP-001',
+      sector: 'Textile unit',
+      city: 'Surat',
+      approvalRequests: [
+        { id: 'req1', name: 'Factory Licence', department: 'Industrial', status: 'approved', assignedOfficerName: 'R. Sharma', deskNo: '4', lastActionAt: new Date(Date.now() - 5*86400000).toISOString(), slaDeadline: new Date(Date.now() + 5*86400000).toISOString(), escalated: false, riskTier: 'medium', needsInspection: false },
+        { id: 'req2', name: 'Fire NOC', department: 'Safety', status: 'query_raised', assignedOfficerName: 'A. Gupta', deskNo: '2', lastActionAt: new Date(Date.now() - 2*86400000).toISOString(), slaDeadline: new Date(Date.now() - 2*86400000).toISOString(), escalated: true, riskTier: 'high', needsInspection: true },
+        { id: 'req3', name: 'Pollution Consent', department: 'Environment', status: 'not_started', assignedOfficerName: null, deskNo: null, lastActionAt: null, slaDeadline: new Date(Date.now() + 15*86400000).toISOString(), escalated: false, riskTier: 'high', needsInspection: true },
+        { id: 'req4', name: 'Labour Registration', department: 'Labour', status: 'query_raised', assignedOfficerName: 'M. Patel', deskNo: '1', lastActionAt: new Date(Date.now() - 1*86400000).toISOString(), slaDeadline: new Date(Date.now() + 3*86400000).toISOString(), escalated: false, riskTier: 'low', needsInspection: false },
+        { id: 'req5', name: 'Electricity Connection', department: 'Utilities', status: 'submitted', assignedOfficerName: 'K. Desai', deskNo: '5', lastActionAt: new Date(Date.now() - 1*86400000).toISOString(), slaDeadline: new Date(Date.now() + 7*86400000).toISOString(), escalated: false, riskTier: 'medium', needsInspection: false },
+        { id: 'req6', name: 'Udyam Registration', department: 'MSME', status: 'rejected', assignedOfficerName: 'S. Singh', deskNo: '3', lastActionAt: new Date(Date.now() - 10*86400000).toISOString(), slaDeadline: new Date(Date.now() - 1*86400000).toISOString(), escalated: false, riskTier: 'low', needsInspection: false },
+        { id: 'req7', name: 'Professional Tax', department: 'Finance', status: 'approved', assignedOfficerName: 'V. Kumar', deskNo: '8', lastActionAt: new Date(Date.now() - 15*86400000).toISOString(), slaDeadline: new Date(Date.now() + 10*86400000).toISOString(), escalated: false, riskTier: 'low', needsInspection: false },
+      ]
+    }
+  ]
+};
+
 export const getMyApplicationsAPI = async () => {
   if (USE_MOCK) {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve({
-          data: {
-            applications: [
-              {
-                id: 'APP-001',
-                sector: 'Textile unit',
-                city: 'Surat',
-                approvalRequests: [
-                  { id: 'req1', name: 'Factory Licence', department: 'Industrial', status: 'approved', assignedOfficerName: 'R. Sharma', deskNo: '4', lastActionAt: new Date(Date.now() - 5*86400000).toISOString(), slaDeadline: new Date(Date.now() + 5*86400000).toISOString(), escalated: false, riskTier: 'medium', needsInspection: false },
-                  { id: 'req2', name: 'Fire NOC', department: 'Safety', status: 'under_review', assignedOfficerName: 'A. Gupta', deskNo: '2', lastActionAt: new Date(Date.now() - 2*86400000).toISOString(), slaDeadline: new Date(Date.now() - 2*86400000).toISOString(), escalated: true, riskTier: 'high', needsInspection: true },
-                  { id: 'req3', name: 'Pollution Consent', department: 'Environment', status: 'not_started', assignedOfficerName: null, deskNo: null, lastActionAt: null, slaDeadline: new Date(Date.now() + 15*86400000).toISOString(), escalated: false, riskTier: 'high', needsInspection: true },
-                  { id: 'req4', name: 'Labour Registration', department: 'Labour', status: 'query_raised', assignedOfficerName: 'M. Patel', deskNo: '1', lastActionAt: new Date(Date.now() - 1*86400000).toISOString(), slaDeadline: new Date(Date.now() + 3*86400000).toISOString(), escalated: false, riskTier: 'low', needsInspection: false },
-                  { id: 'req5', name: 'Electricity Connection', department: 'Utilities', status: 'submitted', assignedOfficerName: 'K. Desai', deskNo: '5', lastActionAt: new Date(Date.now() - 1*86400000).toISOString(), slaDeadline: new Date(Date.now() + 7*86400000).toISOString(), escalated: false, riskTier: 'medium', needsInspection: false },
-                  { id: 'req6', name: 'Udyam Registration', department: 'MSME', status: 'rejected', assignedOfficerName: 'S. Singh', deskNo: '3', lastActionAt: new Date(Date.now() - 10*86400000).toISOString(), slaDeadline: new Date(Date.now() - 1*86400000).toISOString(), escalated: false, riskTier: 'low', needsInspection: false },
-                  { id: 'req7', name: 'Professional Tax', department: 'Finance', status: 'approved', assignedOfficerName: 'V. Kumar', deskNo: '8', lastActionAt: new Date(Date.now() - 15*86400000).toISOString(), slaDeadline: new Date(Date.now() + 10*86400000).toISOString(), escalated: false, riskTier: 'low', needsInspection: false },
-                ]
-              }
-            ]
-          }
-        });
+        resolve({ data: myApplicationsCache });
       }, 800);
     });
   }
   return api.get('/applications/mine');
+};
+
+export const getApprovalAPI = async (id) => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const req = myApplicationsCache.applications[0].approvalRequests.find(r => r.id === id) || myApplicationsCache.applications[0].approvalRequests[1];
+        resolve({
+          data: {
+            id,
+            name: req.name,
+            department: req.department,
+            status: req.status,
+            assignedOfficerName: req.assignedOfficerName,
+            deskNo: req.deskNo,
+            lastActionAt: req.lastActionAt,
+            slaDeadline: req.slaDeadline,
+            escalated: req.escalated,
+            riskTier: req.riskTier,
+            needsInspection: req.needsInspection,
+            requiredDocs: [
+              { docType: 'Building Plan', label: 'Building Plan', required: true },
+              { docType: 'Fire Safety Plan', label: 'Fire Safety Plan', required: true },
+              { docType: 'Lease Deed', label: 'Lease Deed', required: true }
+            ],
+            documents: [
+              { id: 'd1', docType: 'Building Plan', fileName: 'building_plan.pdf', validated: true, warnings: [] },
+              {
+                id: 'd2',
+                docType: 'Lease Deed',
+                fileName: 'lease_deed.pdf',
+                validated: false,
+                declaredFields: {
+                  address: 'Plot 12, GIDC Sachin, Surat',
+                  pan: 'ABCDE1234F',
+                  unitSize: '1500 sqft',
+                },
+                warnings: [{ field: "Business Address", doc1: "Application form", doc2: "Lease deed", note: "Address on the lease deed differs from your application. Fix it before submitting." }]
+              }
+            ],
+            activityLog: [
+              { action: 'Application Created', by: 'You', timestamp: new Date(Date.now() - 10*86400000).toISOString(), note: '' },
+              { action: 'Officer Assigned', by: 'System', timestamp: new Date(Date.now() - 9*86400000).toISOString(), note: '' },
+              { action: 'Query Raised', by: 'A. Gupta', timestamp: new Date(Date.now() - 2*86400000).toISOString(), note: 'Doc incomplete, NOC mismatch' }
+            ]
+          }
+        });
+      }, 500);
+    });
+  }
+  return api.get(`/approvals/${id}`);
+};
+
+export const checkDocumentAPI = async (id, payload) => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const { docType, fileName, declaredFields } = payload;
+        if (docType === 'Lease Deed' && declaredFields?.address?.trim().toLowerCase() !== 'plot 14, gidc sachin, surat') {
+          resolve({
+            data: {
+              document: { id: 'new-doc', docType, fileName, validated: false, warnings: [{ field: "Business Address", doc1: "Application form", doc2: "Lease deed", note: "Address on the lease deed differs from your application. Fix it before submitting." }] },
+              warnings: [{ field: "Business Address", doc1: "Application form", doc2: "Lease deed", note: "Address on the lease deed differs from your application. Fix it before submitting." }]
+            }
+          });
+        } else {
+          resolve({
+            data: {
+              document: { id: 'new-doc', docType, fileName, validated: true, warnings: [] },
+              warnings: []
+            }
+          });
+        }
+      }, 600);
+    });
+  }
+  return api.post(`/approvals/${id}/documents`, payload);
+};
+
+export const submitApprovalAPI = async (id) => {
+  if (USE_MOCK) {
+    return new Promise(resolve => setTimeout(() => {
+      const app = myApplicationsCache.applications[0];
+      const req = app.approvalRequests.find(r => r.id === id);
+      if (req) {
+        req.status = 'submitted';
+      }
+      resolve({ data: { success: true } });
+    }, 500));
+  }
+  return api.post(`/approvals/${id}/submit`);
+};
+
+export const getMessagesAPI = async (id) => {
+  if (USE_MOCK) {
+    return new Promise(resolve => setTimeout(() => {
+      resolve({
+        data: [
+          {
+            id: 'm1',
+            senderRole: 'officer',
+            senderName: 'A. Gupta',
+            text: 'Doc incomplete, NOC mismatch',
+            timestamp: new Date(Date.now() - 2*86400000).toISOString(),
+            aiExplanation: {
+              explanation: 'The address on your Lease Deed does not match the address provided in your main application profile.',
+              steps: ['Check the address on your Lease Deed.', 'Update your application profile address if it is wrong.', 'Re-upload the Lease Deed.'],
+              hindi: 'लीज डीड का पता आपके आवेदन से मेल नहीं खाता। कृपया इसे ठीक करें।'
+            }
+          }
+        ]
+      });
+    }, 500));
+  }
+  return api.get(`/approvals/${id}/messages`);
+};
+
+export const sendMessageAPI = async (id, text) => {
+  if (USE_MOCK) {
+    return new Promise(resolve => setTimeout(() => resolve({ data: { success: true } }), 500));
+  }
+  return api.post(`/approvals/${id}/messages`, { text });
 };
 
 export default api;

@@ -11,6 +11,7 @@ const ChecklistResult = React.lazy(() => import('./pages/public/ChecklistResult'
 const DevComponents = React.lazy(() => import('./pages/public/DevComponents'));
 const NotFound = React.lazy(() => import('./pages/public/NotFound'));
 const ApplicantDashboard = React.lazy(() => import('./pages/applicant/Dashboard'));
+const ApplicantWorkspace = React.lazy(() => import('./pages/applicant/Workspace'));
 const OfficerDashboard = React.lazy(() => import('./pages/officer/Dashboard'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
 
@@ -45,6 +46,9 @@ export default function App() {
               
               <Route path="dashboard" element={
                 <ProtectedRoute allowedRoles={['applicant']}><ApplicantDashboard /></ProtectedRoute>
+              } />
+              <Route path="approvals/:id" element={
+                <ProtectedRoute allowedRoles={['applicant']}><ApplicantWorkspace /></ProtectedRoute>
               } />
               <Route path="*" element={<ProtectedRoute allowedRoles={['applicant']}><div>Placeholder</div></ProtectedRoute>} />
               
