@@ -269,7 +269,7 @@ const MESSAGES_INITIAL = {
 
 // ── Initial queue rows (source of truth) ──────────────────────────────────
 const QUEUE_INITIAL = [
-  // req2 — shared with applicant store (overdue + escalated)
+  // req2 — shared with applicant store (not overdue, 6 days left, not escalated)
   {
     id: 'req2',
     applicantName: 'Alice Applicant',
@@ -278,9 +278,9 @@ const QUEUE_INITIAL = [
     department: 'Fire Dept',
     status: 'query_raised',
     riskTier: 'high',
-    slaDeadline: D(-2),
-    escalated: true,
-    escalatedFrom: 'Safety Inspector',
+    slaDeadline: D(6),
+    escalated: false,
+    escalatedFrom: null,
     warningsCount: 1,
     lastActionAt: D(-2),
     assignedOfficerName: 'Bob Officer',
@@ -291,7 +291,7 @@ const QUEUE_INITIAL = [
     applicantName: 'Dilip Shah',
     unitName: 'Shah Corp Chemicals, Surat',
     name: 'Hazardous Waste NOC',
-    department: 'Fire Dept',
+    department: 'Environment',
     status: 'submitted',
     riskTier: 'high',
     slaDeadline: D(-3),
@@ -325,7 +325,7 @@ const QUEUE_INITIAL = [
     department: 'Fire Dept',
     status: 'submitted',
     riskTier: 'high',
-    slaDeadline: D(5),
+    slaDeadline: D(14),
     escalated: false,
     warningsCount: 1,
     lastActionAt: D(-2),
@@ -336,11 +336,11 @@ const QUEUE_INITIAL = [
     id: 'q-4',
     applicantName: 'Sunita Patel',
     unitName: 'Patel Forge, Rajkot',
-    name: 'Fire Clearance',
-    department: 'Fire Dept',
+    name: 'Factory Clearance',
+    department: 'Industrial',
     status: 'under_review',
     riskTier: 'medium',
-    slaDeadline: D(8),
+    slaDeadline: D(16),
     escalated: false,
     warningsCount: 0,
     lastActionAt: D(-3),
@@ -355,7 +355,7 @@ const QUEUE_INITIAL = [
     department: 'Fire Dept',
     status: 'under_review',
     riskTier: 'high',
-    slaDeadline: D(12),
+    slaDeadline: D(20),
     escalated: false,
     warningsCount: 0,
     lastActionAt: D(-10),
@@ -382,10 +382,10 @@ const QUEUE_INITIAL = [
     applicantName: 'Vikram Nair',
     unitName: 'Nair Tech, Gandhinagar',
     name: 'Electrical Safety NOC',
-    department: 'Fire Dept',
+    department: 'Utilities',
     status: 'submitted',
     riskTier: 'low',
-    slaDeadline: D(14),
+    slaDeadline: D(18),
     escalated: false,
     warningsCount: 0,
     lastActionAt: D(-5),
@@ -402,6 +402,10 @@ export let officerStore = {
   messages: JSON.parse(JSON.stringify(MESSAGES_INITIAL)),
   documents: JSON.parse(JSON.stringify(DOCS_PER_REQUEST)),
 };
+
+export function getOfficerStore() {
+  return officerStore;
+}
 
 // ── Reset ──────────────────────────────────────────────────────────────────
 export function resetOfficerStore() {
