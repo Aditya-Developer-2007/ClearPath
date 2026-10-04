@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   getApprovalAPI,
@@ -7,6 +7,7 @@ import {
   checkDocumentAPI,
   submitApprovalAPI,
   getMyApplicationsAPI,
+  DEMO_PROFILE_ADDRESS,
 } from '../../lib/api';
 import EmptyState from '../../components/EmptyState';
 import SkeletonCard from '../../components/SkeletonCard';
@@ -19,10 +20,10 @@ import {
 } from 'lucide-react';
 
 // ── Constants ──────────────────────────────────────────────────────────────
-const PROFILE_ADDRESS = 'plot 14, gidc sachin, surat';
+const PROFILE_ADDRESS = DEMO_PROFILE_ADDRESS.toLowerCase();
 
 const DEFAULT_DECLARED_FIELDS = {
-  address: 'Plot 14, GIDC Sachin, Surat',
+  address: DEMO_PROFILE_ADDRESS,
   pan: 'ABCDE1234F',
   unitSize: '1500 sqft',
 };
@@ -125,17 +126,15 @@ function getDocChecklistInfo(req, doc, validation, isChecking) {
 // ── Initial snapshot of mock docs for Reset demo ───────────────────────────
 function buildInitialDocs(appData) {
   const docs = {};
-  appData.requiredDocs.forEach((req) => {
-    const uploaded = appData.documents.find((d) => d.docType === req.docType);
+  (appData.requiredDocs || []).forEach((req) => {
+    const uploaded = (appData.documents || []).find((d) => d.docType === req.docType);
     if (uploaded) {
       docs[req.docType] = {
         docType: req.docType,
         fileName: uploaded.fileName,
         declaredFields: uploaded.declaredFields
           ? { ...uploaded.declaredFields }
-          : req.docType === 'Lease Deed'
-            ? { ...DEFAULT_DECLARED_FIELDS, address: 'Plot 12, GIDC Sachin, Surat' }
-            : { ...DEFAULT_DECLARED_FIELDS },
+          : { ...DEFAULT_DECLARED_FIELDS },
         unchecked: false,
       };
     } else {
@@ -156,6 +155,15 @@ export default function Workspace() {
   const [originalApproval, setOriginalApproval] = useState(null);
   const [allApprovals, setAllApprovals] = useState([]);
   const [messages, setMessages] = useState([]);
+  const uniqueMessages = useMemo(() => {
+    const seen = new Set();
+    return (messages || []).filter((m) => {
+      if (!m || !m.id) return true;
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }, [messages]);
 
   /**
    * docsState[docType] = {
@@ -313,13 +321,24 @@ export default function Workspace() {
 
   const handleSendReply = () => {
     if (!replyText.trim()) return;
-    const text = replyText;
+    const text = replyText.trim();
     setReplyText('');
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now().toString(), senderRole: 'applicant', senderName: 'You', text, timestamp: new Date().toISOString() },
-    ]);
-    sendMessageAPI(id, text).catch(console.error);
+    const msgId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const optimistic = {
+      id: msgId,
+      senderRole: 'applicant',
+      senderName: 'You',
+      text,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => (prev.some((m) => m.id === msgId) ? prev : [...prev, optimistic]));
+    sendMessageAPI(id, text, 'You', 'applicant', msgId)
+      .then((res) => {
+        if (res.data?.messages) {
+          setMessages(res.data.messages);
+        }
+      })
+      .catch(console.error);
   };
 
   const handleSubmit = () => {
@@ -779,17 +798,16 @@ export default function Workspace() {
             className={`bg-white border border-border rounded shadow-sm flex flex-col ${
               mobileTab === 'thread' || mobileTab === 'documents' ? 'block' : 'hidden md:block'
             }`}
-            style={{ height: '500px' }}
           >
             <div className="p-4 border-b border-border shrink-0">
               <h2 className="font-headings text-lg text-[#0A1128]">Thread</h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
-              {messages.length === 0 ? (
+            <div className="p-4 space-y-4 bg-gray-50/50">
+              {uniqueMessages.length === 0 ? (
                 <div className="text-center text-sm text-gray-400 py-8">No messages yet.</div>
               ) : (
-                messages.map((m) => {
+                uniqueMessages.map((m) => {
                   const isYou = m.senderRole === 'applicant';
                   return (
                     <div key={m.id} className={`flex flex-col ${isYou ? 'items-end' : 'items-start'}`}>

@@ -13,6 +13,8 @@ const NotFound = React.lazy(() => import('./pages/public/NotFound'));
 const ApplicantDashboard = React.lazy(() => import('./pages/applicant/Dashboard'));
 const ApplicantWorkspace = React.lazy(() => import('./pages/applicant/Workspace'));
 const OfficerDashboard = React.lazy(() => import('./pages/officer/Dashboard'));
+const OfficerReview = React.lazy(() => import('./pages/officer/Review'));
+const OfficerEscalated = React.lazy(() => import('./pages/officer/Escalated'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
 
 const Loader = () => <div className="p-8 flex justify-center text-gray-500">Loading...</div>;
@@ -56,6 +58,12 @@ export default function App() {
             <Route path="/officer" element={<AppShell />}>
               <Route path="queue" element={
                 <ProtectedRoute allowedRoles={['officer']}><OfficerDashboard /></ProtectedRoute>
+              } />
+              <Route path="review/:id" element={
+                <ProtectedRoute allowedRoles={['officer']}><OfficerReview /></ProtectedRoute>
+              } />
+              <Route path="escalated" element={
+                <ProtectedRoute allowedRoles={['officer']}><OfficerEscalated /></ProtectedRoute>
               } />
               <Route path="*" element={<ProtectedRoute allowedRoles={['officer']}><div>Placeholder</div></ProtectedRoute>} />
             </Route>
