@@ -1,4 +1,4 @@
-import { Home, Inbox, MessageSquare, AlertCircle, FileText, Settings, Activity } from 'lucide-react';
+import { Home, Inbox, MessageSquare, AlertCircle, FileText, Activity, CalendarCheck } from 'lucide-react';
 
 export const navConfig = {
   applicant: [
@@ -13,7 +13,6 @@ export const navConfig = {
   ],
   admin: [
     { name: 'Analytics', path: '/admin/analytics', icon: Activity },
-    { name: 'Inspections', path: '/admin/inspections', icon: FileText },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Inspections', path: '/admin/inspections', icon: CalendarCheck },
   ],
 };

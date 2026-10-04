@@ -5,7 +5,7 @@ import EmptyState from '../../components/EmptyState';
 import SkeletonCard from '../../components/SkeletonCard';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
-import { ShieldAlert, Info, Play, Eye, MessageSquareReply, LayoutList, GitMerge, CornerDownRight } from 'lucide-react';
+import { ShieldAlert, Info, Play, Eye, MessageSquareReply, LayoutList, GitMerge, CornerDownRight, CheckCircle2 } from 'lucide-react';
 
 export default function ApplicantDashboard() {
   const [data, setData] = useState(null);
@@ -65,10 +65,15 @@ export default function ApplicantDashboard() {
     if (!data) return [];
     const arr = [];
     data.approvalRequests.forEach(r => {
-      const isOverdue = new Date(r.slaDeadline) < now && !['approved', 'rejected'].includes(r.status);
-      if (isOverdue) arr.push({ id: r.id, text: `${r.name} is overdue!` });
-      else if (r.escalated) arr.push({ id: r.id, text: `${r.name} was escalated.` });
-      else if (r.status === 'query_raised') arr.push({ id: r.id, text: `Query raised on ${r.name}.` });
+      if (['approved', 'rejected'].includes(r.status)) return;
+      const isOverdue = new Date(r.slaDeadline) < now;
+      if (r.escalated) {
+        arr.push({ id: r.id, text: `${r.name} is past SLA and was escalated to the Senior Officer.` });
+      } else if (isOverdue) {
+        arr.push({ id: r.id, text: `${r.name} is past SLA.` });
+      } else if (r.status === 'query_raised') {
+        arr.push({ id: r.id, text: `${r.name} needs your reply.` });
+      }
     });
     return arr;
   }, [data, now]);
@@ -171,15 +176,28 @@ export default function ApplicantDashboard() {
       </div>
 
       {/* Alert Strip */}
-      {(alerts.length > 0 || unscheduledInspections.length >= 2) && (
+      {(alerts.length > 0 || data?.scheduledInspection || unscheduledInspections.length >= 2) && (
         <div className="bg-white border border-border rounded shadow-sm overflow-hidden flex flex-col">
-          {alerts.length > 0 && (
-            <div className="bg-red-50 text-red-800 p-4 text-sm flex gap-3 items-start">
-              <ShieldAlert size={20} className="shrink-0 text-red-600 mt-0.5" />
-              <div><strong>Attention needed:</strong> You have {alerts.length} item(s) requiring immediate attention.</div>
+          {data?.scheduledInspection && (
+            <div className="bg-teal-50 text-teal-900 p-4 text-sm flex gap-3 items-center">
+              <CheckCircle2 size={18} className="shrink-0 text-teal-700" />
+              <div><strong>Combined inspection scheduled for {data.scheduledInspection.date}</strong></div>
             </div>
           )}
-          {unscheduledInspections.length >= 2 && (
+          {alerts.length > 0 && (
+            <div className={`bg-red-50 text-red-800 p-4 text-sm flex gap-3 items-start ${data?.scheduledInspection ? 'border-t border-border' : ''}`}>
+              <ShieldAlert size={20} className="shrink-0 text-red-600 mt-0.5" />
+              <div className="space-y-1">
+                {alerts.slice(0, 3).map((alert, idx) => (
+                  <div key={alert.id || idx}>{alert.text}</div>
+                ))}
+                {alerts.length > 3 && (
+                  <div className="text-red-700 font-medium">and {alerts.length - 3} more</div>
+                )}
+              </div>
+            </div>
+          )}
+          {!data?.scheduledInspection && unscheduledInspections.length >= 2 && (
             <div className={`bg-teal-50/50 text-teal-800 p-4 text-sm flex gap-3 items-start ${alerts.length > 0 ? 'border-t border-border' : ''}`}>
               <Info size={18} className="shrink-0 text-teal-600 mt-0.5" />
               <div><strong>Tip:</strong> {unscheduledInspections.map(r => r.name.split(' ')[0]).join(' and ')} inspections can be combined into one visit.</div>

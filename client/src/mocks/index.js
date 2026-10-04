@@ -16,7 +16,7 @@ export const approvals = [
   { id: '107', name: 'Fire Safety NOC', department: 'Safety', status: 'overdue', assignedOfficerName: 'Bob Officer', deskNo: '2', lastActionAt: '2023-09-15T10:00:00Z', slaDeadline: '2023-09-30T10:00:00Z', escalated: false, riskTier: 'high', needsInspection: true },
 ];
 
-// Re-export stores
 export { myApplicationsCache } from './applicantStore';
 export { officerStore, resetOfficerStore, DEMO_PROFILE_ADDRESS } from './officerQueue';
+export { adminStore, resetAdminStore, getAnalytics, fastForward, getInspections, scheduleInspection } from './adminStore';
 

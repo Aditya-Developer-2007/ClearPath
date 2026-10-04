@@ -9,6 +9,13 @@ import {
   REQUIRED_DOCS_PER_REQUEST,
   DEMO_PROFILE_ADDRESS,
 } from '../mocks/officerQueue';
+import {
+  resetAdminStore,
+  getAnalytics,
+  fastForward,
+  getInspections,
+  scheduleInspection,
+} from '../mocks/adminStore';
 
 export { DEMO_PROFILE_ADDRESS };
 
@@ -471,11 +478,98 @@ export const aiSummarizeAPI = async (approvalRequestId) => {
   return api.post('/ai/summarize', { approvalRequestId });
 };
 
+// ── Admin ──────────────────────────────────────────────────────────────────
+export const getAdminAnalyticsAPI = async () => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ data: getAnalytics() });
+      }, 300);
+    });
+  }
+  return api.get('/admin/analytics');
+};
+
+export const fastForwardAPI = async (days) => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const result = fastForward(days);
+        resolve({ data: result });
+      }, 300);
+    });
+  }
+  return api.post('/admin/fast-forward', { days });
+};
+
+export const getAdminInspectionsAPI = async () => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ data: getInspections() });
+      }, 300);
+    });
+  }
+  return api.get('/admin/inspections');
+};
+
+export const scheduleInspectionAPI = async ({ id, slotDate }) => {
+  if (USE_MOCK) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const updated = scheduleInspection(id, slotDate);
+        if (updated) {
+          resolve({ data: updated });
+        } else {
+          reject(new Error('Inspection proposal not found'));
+        }
+      }, 300);
+    });
+  }
+  return api.post('/admin/inspections/schedule', { id, slotDate });
+};
+
+export const getAdminInsightsAPI = async (analyticsData) => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const depts = analyticsData?.byDepartment || [];
+        const breaches = analyticsData?.totals?.breaches ?? 0;
+        const escalations = analyticsData?.totals?.escalations ?? 0;
+        const sortedByDays = [...depts].sort((a, b) => b.avgDays - a.avgDays);
+        const slowestDept = sortedByDays[0] || { dept: 'Environment', avgDays: 22, pending: 2 };
+
+        const insights = [
+          {
+            title: `${slowestDept.dept} processing bottleneck (${slowestDept.avgDays}d average)`,
+            action: `Reassign ${slowestDept.pending} pending files or activate auto-delegation rules to prevent SLA slippage.`,
+          },
+          {
+            title: escalations > 0
+              ? `${escalations} critical escalation${escalations > 1 ? 's' : ''} require immediate senior sign-off`
+              : `Zero senior officer escalations in the current cycle`,
+            action: escalations > 0
+              ? `Prioritize senior officer review queues for high-risk textile and chemical unit filings.`
+              : `Review upcoming 48-hour deadlines to maintain current positive compliance velocity.`,
+          },
+          {
+            title: 'Joint inspection clustering opportunity',
+            action: 'Merge safety and environmental site visits in Surat industrial zone to save visits and reduce turnaround by 4 days.',
+          },
+        ];
+        resolve({ data: { ok: true, insights } });
+      }, 600);
+    });
+  }
+  return api.post('/ai/insight', analyticsData);
+};
+
 export const resetMockDataAPI = async () => {
   if (USE_MOCK) {
     return new Promise((resolve) => {
       setTimeout(() => {
         resetOfficerStore();
+        resetAdminStore();
         resolve({ data: { success: true } });
       }, 100);
     });
@@ -484,3 +578,4 @@ export const resetMockDataAPI = async () => {
 };
 
 export default api;
+
