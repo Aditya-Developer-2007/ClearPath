@@ -1,18 +1,36 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { getMyApplicationsAPI } from '../../lib/api';
+import useSharedTimer from '../../hooks/useSharedTimer';
 import EmptyState from '../../components/EmptyState';
 import SkeletonCard from '../../components/SkeletonCard';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
 import { ShieldAlert, Info, Play, Eye, MessageSquareReply, LayoutList, GitMerge, CornerDownRight, CheckCircle2 } from 'lucide-react';
 
+function bucketOf(r, now) {
+  if (r.status === 'approved') {
+    return 'approved';
+  }
+  const isOverdue = r.slaDeadline ? new Date(r.slaDeadline) < now : false;
+  if (r.status === 'query_raised' || r.status === 'rejected' || isOverdue || r.escalated) {
+    return 'needsAction';
+  }
+  if (['submitted', 'under_review'].includes(r.status)) {
+    return 'inReview';
+  }
+  if (r.status === 'not_started') {
+    return 'notStarted';
+  }
+  return 'needsAction';
+}
+
 export default function ApplicantDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [view, setView] = useState('cards'); // 'cards' or 'route'
-  const [now, setNow] = useState(new Date());
+  const now = useSharedTimer();
   
   const navigate = useNavigate();
   const { setAlerts } = useOutletContext() || {};
@@ -29,23 +47,32 @@ export default function ApplicantDashboard() {
       });
   }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
   const stats = useMemo(() => {
-    if (!data) return { total: 0, inReview: 0, needsAction: 0, approved: 0 };
+    if (!data?.approvalRequests) return { total: 0, needsAction: 0, inReview: 0, notStarted: 0, approved: 0 };
     const reqs = data.approvalRequests;
     const total = reqs.length;
-    const approved = reqs.filter(r => r.status === 'approved').length;
-    const inReview = reqs.filter(r => {
-      const isOverdue = new Date(r.slaDeadline) < now && !['approved', 'rejected'].includes(r.status);
-      return ['submitted', 'under_review'].includes(r.status) && !isOverdue;
-    }).length;
-    const needsAction = total - approved - inReview;
-    return { total, inReview, needsAction, approved };
+
+    const counts = { approved: 0, inReview: 0, needsAction: 0, notStarted: 0 };
+    reqs.forEach((r) => {
+      const bucket = bucketOf(r, now);
+      if (counts[bucket] !== undefined) {
+        counts[bucket]++;
+      }
+    });
+
+    return {
+      total,
+      needsAction: counts.needsAction,
+      inReview: counts.inReview,
+      notStarted: counts.notStarted,
+      approved: counts.approved,
+    };
   }, [data, now]);
+
+  const isMismatch =
+    Boolean(import.meta.env.DEV) &&
+    stats.total > 0 &&
+    stats.approved + stats.inReview + stats.needsAction + stats.notStarted !== stats.total;
 
   const sortedReqs = useMemo(() => {
     if (!data) return [];
@@ -160,11 +187,17 @@ export default function ApplicantDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {isMismatch && (
+        <div className="text-xs text-red-600 font-mono font-semibold">
+          stats mismatch
+        </div>
+      )}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         {[
           { label: 'Total', value: stats.total, caption: 'all approvals' },
+          { label: 'Needs action', value: stats.needsAction, caption: 'reply, rejected or overdue' },
           { label: 'In review', value: stats.inReview, caption: 'being checked' },
-          { label: 'Needs action', value: stats.needsAction, caption: 'query or overdue' },
+          { label: 'Not started', value: stats.notStarted, caption: 'pending submission' },
           { label: 'Approved', value: stats.approved, caption: 'done' },
         ].map(s => (
           <div key={s.label} className="bg-white border border-border p-4 rounded shadow-sm flex flex-col">

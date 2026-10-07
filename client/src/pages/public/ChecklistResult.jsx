@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import RiskBadge from '../../components/RiskBadge';
 import EmptyState from '../../components/EmptyState';
+import AssistantDrawer from '../../components/AssistantDrawer';
 import { Building2, ShieldAlert, FileText, Briefcase, Zap, FileSignature, Landmark, MessageCircle } from 'lucide-react';
 
 const DEPT_ICONS = {
@@ -15,11 +16,47 @@ const DEPT_ICONS = {
   'Finance': Landmark
 };
 
+function useCountUp(target = 0, duration = 700) {
+  const isReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [count, setCount] = useState(() => (isReduced ? target : 0));
+
+  useEffect(() => {
+    if (isReduced) return;
+
+    let startTimestamp = null;
+    let animId = null;
+
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(easedProgress * target));
+
+      if (progress < 1) {
+        animId = requestAnimationFrame(step);
+      }
+    };
+
+    animId = requestAnimationFrame(step);
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, [target, duration, isReduced]);
+
+  return isReduced ? target : count;
+}
+
 export default function ChecklistResult() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const result = state?.result;
+
+  const approvals = result?.approvals || [];
+  const estimatedDays = result?.estimatedDays || 0;
+  const animatedApprovals = useCountUp(approvals.length, 700);
+  const animatedDays = useCountUp(estimatedDays, 700);
 
   if (!result) {
     return (
@@ -30,15 +67,13 @@ export default function ChecklistResult() {
     );
   }
 
-  const { approvals, estimatedDays } = result;
   const inspectionCount = approvals.filter(a => a.needsInspection).length;
 
   const handleStart = () => {
     if (user) {
       navigate('/app/dashboard');
     } else {
-      // In a real app we'd pass a return URL
-      navigate('/login');
+      navigate('/login', { state: { returnUrl: '/app/dashboard' } });
     }
   };
 
@@ -51,10 +86,10 @@ export default function ChecklistResult() {
       <main className="flex-1 w-full max-w-4xl mx-auto p-6 md:p-12">
         <div className="mb-10 text-center">
           <h1 className="text-4xl md:text-5xl font-headings mb-4 text-text">
-            {approvals.length} approvals required
+            {animatedApprovals} approvals required
           </h1>
           <p className="text-lg font-mono text-gray-600">
-            Estimated ~{estimatedDays} days
+            Estimated ~{animatedDays} days
           </p>
         </div>
 
@@ -114,10 +149,14 @@ export default function ChecklistResult() {
       {/* Floating Ask Assistant Button */}
       <button 
         className="fixed bottom-24 right-6 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg hover:bg-teal-800 transition-colors z-20 group"
-        onClick={() => alert("Assistant coming next")}
+        onClick={() => setAssistantOpen(true)}
+        aria-label="Ask assistant"
       >
         <MessageCircle size={24} />
       </button>
+
+      {/* Assistant Drawer */}
+      <AssistantDrawer isOpen={assistantOpen} onClose={() => setAssistantOpen(false)} />
     </div>
   );
 }

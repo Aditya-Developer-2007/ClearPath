@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Bell, LogOut, User, Settings as SettingsIcon } from 'lucide-react';
+import { Bell, LogOut, User, Settings as SettingsIcon, MessageCircle } from 'lucide-react';
 import { navConfig } from '../lib/navConfig';
+import AssistantDrawer from '../components/AssistantDrawer';
 
 export default function AppShell() {
   const { user, logout } = useAuth();
@@ -10,6 +11,7 @@ export default function AppShell() {
   const location = useLocation();
   const [alerts, setAlerts] = useState([]);
   const [bellOpen, setBellOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -117,6 +119,21 @@ export default function AppShell() {
           )
         })}
       </nav>
+
+      {/* Floating Ask Assistant Button on Applicant side */}
+      {(user?.role === 'applicant' || location.pathname.startsWith('/app')) && (
+        <>
+          <button
+            className="fixed bottom-20 md:bottom-8 right-6 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg hover:bg-teal-800 transition-colors z-20 group"
+            onClick={() => setAssistantOpen(true)}
+            aria-label="Ask assistant"
+            title="Ask assistant"
+          >
+            <MessageCircle size={24} />
+          </button>
+          <AssistantDrawer isOpen={assistantOpen} onClose={() => setAssistantOpen(false)} />
+        </>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { loginAPI } from '../../lib/api';
 
@@ -7,15 +7,23 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleDemoLogin = async (email) => {
     setLoading(true);
     try {
       const { data } = await loginAPI(email);
       login(data.user, data.token);
-      if (data.user.role === 'applicant') navigate('/app/dashboard');
-      else if (data.user.role === 'officer') navigate('/officer/queue');
-      else if (data.user.role === 'admin') navigate('/admin/analytics');
+      const returnUrl = location.state?.returnUrl;
+      if (returnUrl) {
+        navigate(returnUrl);
+      } else if (data.user.role === 'applicant') {
+        navigate('/app/dashboard');
+      } else if (data.user.role === 'officer') {
+        navigate('/officer/queue');
+      } else if (data.user.role === 'admin') {
+        navigate('/admin/analytics');
+      }
     } catch (e) {
       console.error(e);
     } finally {

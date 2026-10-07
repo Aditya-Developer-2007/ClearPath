@@ -82,24 +82,95 @@ export const intakeAPI = async (text) => {
   if (USE_MOCK) {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const lower = text.toLowerCase();
+        const lower = (text || '').toLowerCase();
+
+        // 1. Stage
         let stage = null;
-        if (/(starting|start|new|open|setting up|shuru|kholna)/i.test(lower)) {
+        if (/(starting|start|new|open|setting up|shuru|kholna|kholni|setup)/i.test(lower)) {
           stage = 'New';
         } else if (/(expand|expansion|badhana)/i.test(lower)) {
           stage = 'Expansion';
-        } else if (/(renew)/i.test(lower)) {
+        } else if (/(renew|renewal)/i.test(lower)) {
           stage = 'Renewal';
         }
 
-        if (lower.includes('textile') || lower.includes('surat') || lower.includes('lakh')) {
-          resolve({ data: { ok: true, data: { sector: 'Textile', state: 'Gujarat', city: 'Surat', investmentLakh: 30, employees: 12, hazardous: null, stage } } });
-        } else if (stage) {
-          resolve({ data: { ok: true, data: { stage } } });
+        // 2. Sector (textile, food, chemical, engineering/manufacturing)
+        let sector = null;
+        if (lower.includes('textile')) {
+          sector = 'Textile';
+        } else if (lower.includes('chemical')) {
+          sector = 'Chemicals';
+        } else if (lower.includes('food')) {
+          sector = 'Food Processing';
+        } else if (lower.includes('engineering') || lower.includes('manufacturing')) {
+          sector = 'Manufacturing';
+        } else if (lower.includes('electronics')) {
+          sector = 'Electronics';
+        }
+
+        // 3. Location (Surat, Ahmedabad, Vadodara, Rajkot mapped to Gujarat)
+        let city = null;
+        let state = null;
+        if (lower.includes('surat')) {
+          city = 'Surat';
+          state = 'Gujarat';
+        } else if (lower.includes('ahmedabad')) {
+          city = 'Ahmedabad';
+          state = 'Gujarat';
+        } else if (lower.includes('vadodara')) {
+          city = 'Vadodara';
+          state = 'Gujarat';
+        } else if (lower.includes('rajkot')) {
+          city = 'Rajkot';
+          state = 'Gujarat';
+        }
+
+        // 4. Investment: handle lakh, crore, L
+        let investmentLakh = null;
+        const croreMatch = lower.match(/(?:(?:rs\.?|inr|₹)\s*)?(\d+(?:\.\d+)?)\s*(?:crore|cr)\b/i);
+        if (croreMatch) {
+          investmentLakh = Math.round(parseFloat(croreMatch[1]) * 100);
+        } else {
+          const lakhMatch = lower.match(/(?:(?:rs\.?|inr|₹)\s*)?(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|lac|lacs|l)\b/i);
+          if (lakhMatch) {
+            investmentLakh = Math.round(parseFloat(lakhMatch[1]));
+          }
+        }
+
+        // 5. Workers / Employees: ("12 workers", "12 log")
+        let employees = null;
+        const workerMatch = lower.match(/(\d+)\s*(?:workers|worker|employees|employee|people|log|staff|shramik|karmachari)\b/i);
+        if (workerMatch) {
+          employees = parseInt(workerMatch[1], 10);
+        }
+
+        // 6. Hazardous: "hazardous"/"chemical" => hazardous:true
+        let hazardous = null;
+        if (lower.includes('hazardous') || lower.includes('chemical')) {
+          hazardous = true;
+        }
+
+        const hasAnyParsed = sector !== null || city !== null || state !== null || investmentLakh !== null || employees !== null || hazardous !== null || stage !== null;
+
+        if (hasAnyParsed) {
+          resolve({
+            data: {
+              ok: true,
+              data: {
+                sector,
+                state,
+                city,
+                investmentLakh,
+                employees,
+                hazardous,
+                stage,
+              },
+            },
+          });
         } else {
           resolve({ data: { ok: false } });
         }
-      }, 800);
+      }, 600);
     });
   }
   return api.post('/ai/intake', { text });
@@ -562,6 +633,189 @@ export const getAdminInsightsAPI = async (analyticsData) => {
     });
   }
   return api.post('/ai/insight', analyticsData);
+};
+
+export const KNOWLEDGE_BASE = [
+  {
+    sourceRef: 'FD-01',
+    name: 'Fire NOC',
+    department: 'Fire Dept',
+    slaDays: 14,
+    docs: ['Building Plan', 'Fire Safety Plan', 'Site Layout', 'Lease Deed'],
+    keywords: ['fire', 'noc', 'fire safety', 'aag', 'fd-01'],
+  },
+  {
+    sourceRef: 'ENV-02',
+    name: 'Pollution Consent',
+    department: 'Environment',
+    slaDays: 30,
+    docs: ['Environmental Management Plan', 'Effluent Treatment Layout', 'Site Clearance'],
+    keywords: ['pollution', 'environment', 'consent', 'cte', 'cto', 'environmental', 'pradushan', 'env-02'],
+  },
+  {
+    sourceRef: 'IND-03',
+    name: 'Factory Licence',
+    department: 'Industrial',
+    slaDays: 20,
+    docs: ['Factory Plan Approval', 'Machinery Layout', 'Worker Safety Certificate', 'Stability Certificate'],
+    keywords: ['factory', 'licence', 'license', 'industrial', 'machinery', 'karkhana', 'ind-03'],
+  },
+  {
+    sourceRef: 'LAB-04',
+    name: 'Labour Registration',
+    department: 'Labour',
+    slaDays: 15,
+    docs: ['Worker Muster Roll', 'Wage Register Copy', 'Form A Application'],
+    keywords: ['labour', 'labor', 'worker', 'workers', 'shramik', 'karmachari', 'log', 'lab-04'],
+  },
+  {
+    sourceRef: 'UTL-05',
+    name: 'Electricity Connection',
+    department: 'Utilities',
+    slaDays: 15,
+    docs: ['Load Test Certificate', 'Wiring Diagram', 'Ownership Proof / Lease Deed', 'ID Proof'],
+    keywords: ['electricity', 'power', 'bijli', 'connection', 'utility', 'load', 'utl-05'],
+  },
+  {
+    sourceRef: 'MSME-06',
+    name: 'Udyam Registration',
+    department: 'MSME',
+    slaDays: 3,
+    docs: ['Aadhaar Number', 'PAN Card', 'Bank Account Details'],
+    keywords: ['udyam', 'msme', 'small business', 'aadhaar', 'pan', 'msme-06'],
+  },
+  {
+    sourceRef: 'FIN-07',
+    name: 'Professional Tax',
+    department: 'Finance',
+    slaDays: 7,
+    docs: ['Certificate of Incorporation / Partnership Deed', 'PAN Card', 'Employee List'],
+    keywords: ['professional tax', 'pt', 'finance', 'fin-07'],
+  },
+  {
+    sourceRef: 'ADM-08',
+    name: 'Combined inspection',
+    department: 'Joint Inspection Cell',
+    slaDays: 10,
+    docs: ['Joint Site Verification Checklist', 'Self-Certification'],
+    keywords: ['combined', 'inspection', 'inspections', 'joint', 'combine', 'together', 'saath', 'visit', 'adm-08'],
+  },
+];
+
+const askCache = new Map();
+
+export const askAssistantAPI = async (question) => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        if (!question || typeof question !== 'string' || !question.trim()) {
+          return resolve({ data: { ok: false } });
+        }
+
+        const normalized = question.trim().toLowerCase();
+        if (askCache.has(normalized)) {
+          return resolve({ data: askCache.get(normalized) });
+        }
+
+        // Match by keywords against 8 entries
+        let matchedEntry = null;
+        for (const entry of KNOWLEDGE_BASE) {
+          const hasMatch = entry.keywords.some((kw) => normalized.includes(kw));
+          if (hasMatch) {
+            matchedEntry = entry;
+            break;
+          }
+        }
+
+        let result;
+        if (matchedEntry) {
+          const isDocQuestion = /(document|documents|docs|kya chahiye|paper|papers|certificate|chahiye)/i.test(normalized);
+          const isTimeQuestion = /(how long|how much time|days|sla|time|kitne din|kitna samay|kab tak|duration|din)/i.test(normalized);
+
+          let answer = '';
+          if (matchedEntry.sourceRef === 'ADM-08') {
+            answer = 'Inspections for Fire Safety and Pollution Clearance can be combined into a single joint visit. This reduces separate visits and coordinates site verification across departments.';
+          } else if (isDocQuestion) {
+            answer = `For ${matchedEntry.name} (${matchedEntry.department}), required documents are: ${matchedEntry.docs.join(', ')}. Ensure declared details match your profile.`;
+          } else if (isTimeQuestion) {
+            answer = `${matchedEntry.name} under ${matchedEntry.department} has a statutory SLA of ${matchedEntry.slaDays} working days for review and clearance.`;
+          } else {
+            answer = `${matchedEntry.name} is processed by ${matchedEntry.department} within a statutory SLA of ${matchedEntry.slaDays} days. Required documents: ${matchedEntry.docs.join(', ')}.`;
+          }
+
+          result = {
+            ok: true,
+            answer,
+            sources: [matchedEntry.sourceRef],
+            confident: true,
+          };
+        } else {
+          result = {
+            ok: true,
+            answer: "I don't have verified information on this. Please contact the concerned department officer.",
+            sources: [],
+            confident: false,
+          };
+        }
+
+        askCache.set(normalized, result);
+        resolve({ data: result });
+      }, 600);
+    });
+  }
+  return api.post('/ai/ask', { question });
+};
+
+const explainCache = new Map();
+
+export const explainQueryAPI = async (note) => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const key = (note || '').trim().toLowerCase();
+        if (explainCache.has(key)) {
+          return resolve({ data: { ok: true, explanation: explainCache.get(key) } });
+        }
+
+        let explanation;
+        if (key.includes('address')) {
+          explanation = {
+            explanation: 'The officer noted an address discrepancy on your documents. The address must match the registered business address in your application profile exactly.',
+            steps: [
+              'Check the business address on your uploaded documents.',
+              'Verify against the address in your application profile.',
+              'Update your document or profile and re-upload.',
+            ],
+            hindi: 'अधिकारी ने पते में विसंगति पाई है। कृपया सुनिश्चित करें कि सभी दस्तावेजों पर पता आपके आवेदन से मेल खाता है।',
+          };
+        } else if (key.includes('doc') || key.includes('document')) {
+          explanation = {
+            explanation: 'The officer indicated that required documentation is incomplete or missing from your submission.',
+            steps: [
+              'Review the required documents checklist for this clearance.',
+              'Ensure all pages are legible and signed.',
+              'Upload the missing document in the workspace.',
+            ],
+            hindi: 'अधिकारी ने अपूर्ण या छूटे हुए दस्तावेज बताए हैं। कृपया आवश्यक दस्तावेज पुनः अपलोड करें।',
+          };
+        } else {
+          explanation = {
+            explanation: 'The reviewing officer has requested clarification regarding your application details.',
+            steps: [
+              "Read the officer's query carefully.",
+              'Reply in this thread with the requested clarification.',
+              'Upload any supporting documents if needed.',
+            ],
+            hindi: 'समीक्षा अधिकारी ने आपके आवेदन के संबंध में स्पष्टीकरण मांगा है। कृपया संदेश का उत्तर दें।',
+          };
+        }
+
+        explainCache.set(key, explanation);
+        resolve({ data: { ok: true, explanation } });
+      }, 500);
+    });
+  }
+  return api.post('/ai/explain-query', { note });
 };
 
 export const resetMockDataAPI = async () => {
