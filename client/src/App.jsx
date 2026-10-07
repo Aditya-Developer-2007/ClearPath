@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { BusinessProvider } from './context/BusinessContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './layouts/AppShell';
 
@@ -32,57 +33,59 @@ const RootRedirect = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Suspense fallback={<Loader />}>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/start" element={<Wizard />} />
-            <Route path="/result" element={<ChecklistResult />} />
-            <Route path="/login" element={<Login />} />
-            
-            <Route element={<AppShell />}>
-              <Route path="/dev/components" element={<DevComponents />} />
-            </Route>
-            
-            <Route path="/app" element={<AppShell />}>
-              <Route index element={<RootRedirect />} />
+      <BusinessProvider>
+        <BrowserRouter>
+          <Suspense fallback={<Loader />}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/start" element={<Wizard />} />
+              <Route path="/result" element={<ChecklistResult />} />
+              <Route path="/login" element={<Login />} />
               
-              <Route path="dashboard" element={
-                <ProtectedRoute allowedRoles={['applicant']}><ApplicantDashboard /></ProtectedRoute>
-              } />
-              <Route path="approvals/:id" element={
-                <ProtectedRoute allowedRoles={['applicant']}><ApplicantWorkspace /></ProtectedRoute>
-              } />
-              <Route path="*" element={<ProtectedRoute allowedRoles={['applicant']}><div>Placeholder</div></ProtectedRoute>} />
+              <Route element={<AppShell />}>
+                <Route path="/dev/components" element={import.meta.env.DEV === true ? <DevComponents /> : <NotFound />} />
+              </Route>
               
-            </Route>
-            <Route path="/officer" element={<AppShell />}>
-              <Route path="queue" element={
-                <ProtectedRoute allowedRoles={['officer']}><OfficerDashboard /></ProtectedRoute>
-              } />
-              <Route path="review/:id" element={
-                <ProtectedRoute allowedRoles={['officer']}><OfficerReview /></ProtectedRoute>
-              } />
-              <Route path="escalated" element={
-                <ProtectedRoute allowedRoles={['officer']}><OfficerEscalated /></ProtectedRoute>
-              } />
-              <Route path="*" element={<ProtectedRoute allowedRoles={['officer']}><div>Placeholder</div></ProtectedRoute>} />
-            </Route>
-            <Route path="/admin" element={<AppShell />}>
-              <Route index element={<Navigate to="/admin/analytics" replace />} />
-              <Route path="analytics" element={
-                <ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>
-              } />
-              <Route path="inspections" element={
-                <ProtectedRoute allowedRoles={['admin']}><AdminInspections /></ProtectedRoute>
-              } />
-              <Route path="*" element={<ProtectedRoute allowedRoles={['admin']}><div>Placeholder</div></ProtectedRoute>} />
-            </Route>
+              <Route path="/app" element={<AppShell />}>
+                <Route index element={<RootRedirect />} />
+                
+                <Route path="dashboard" element={
+                  <ProtectedRoute allowedRoles={['applicant']}><ApplicantDashboard /></ProtectedRoute>
+                } />
+                <Route path="approvals/:id" element={
+                  <ProtectedRoute allowedRoles={['applicant']}><ApplicantWorkspace /></ProtectedRoute>
+                } />
+                <Route path="*" element={<ProtectedRoute allowedRoles={['applicant']}><div>Placeholder</div></ProtectedRoute>} />
+                
+              </Route>
+              <Route path="/officer" element={<AppShell />}>
+                <Route path="queue" element={
+                  <ProtectedRoute allowedRoles={['officer']}><OfficerDashboard /></ProtectedRoute>
+                } />
+                <Route path="review/:id" element={
+                  <ProtectedRoute allowedRoles={['officer']}><OfficerReview /></ProtectedRoute>
+                } />
+                <Route path="escalated" element={
+                  <ProtectedRoute allowedRoles={['officer']}><OfficerEscalated /></ProtectedRoute>
+                } />
+                <Route path="*" element={<ProtectedRoute allowedRoles={['officer']}><div>Placeholder</div></ProtectedRoute>} />
+              </Route>
+              <Route path="/admin" element={<AppShell />}>
+                <Route index element={<Navigate to="/admin/analytics" replace />} />
+                <Route path="analytics" element={
+                  <ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>
+                } />
+                <Route path="inspections" element={
+                  <ProtectedRoute allowedRoles={['admin']}><AdminInspections /></ProtectedRoute>
+                } />
+                <Route path="*" element={<ProtectedRoute allowedRoles={['admin']}><div>Placeholder</div></ProtectedRoute>} />
+              </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </BusinessProvider>
     </AuthProvider>
   );
 }

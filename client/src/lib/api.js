@@ -19,6 +19,74 @@ import {
 
 export { DEMO_PROFILE_ADDRESS };
 
+export function getStatePortalBadge(state) {
+  const s = (state || '').toLowerCase();
+  if (s.includes('maharashtra')) return 'Routed via MAITRI 2.0 / MIDC Single Window';
+  if (s.includes('uttar pradesh') || s.includes('up')) return 'Routed via Nivesh Mitra 3.0 / Invest UP';
+  if (s.includes('tamil nadu') || s.includes('tn')) return 'Routed via Tamil Nadu Single Window Portal (TNSWP)';
+  if (s.includes('gujarat')) return 'Routed via Investor Facilitation Portal (IFP)';
+  return 'Routed via National Single Window';
+}
+
+export function deriveApprovalMetadata(app, state = 'Gujarat') {
+  const name = app.name.toLowerCase();
+  const s = state.toLowerCase();
+  
+  let stage = 'Stage D: Industry-Specific Compliance';
+  if (name.includes('udyam') || name.includes('tax') || name.includes('plan approval') || name.includes('land') || name.includes('allotment')) {
+    stage = 'Stage A: Zero-to-land / Premises Stage';
+  } else if (name.includes('fire') && !name.includes('final')) {
+    stage = 'Stage B: Pre-construction / Construction Stage';
+  } else if (name.includes('pollution consent') || name.includes('cte') || name.includes('building')) {
+    stage = 'Stage B: Pre-construction / Construction Stage';
+  } else if (name.includes('electricity') || name.includes('water')) {
+    stage = 'Stage C: Commissioning / Pre-operation Stage';
+  } else if (name.includes('factory licence') || name.includes('labour') || name.includes('final fire') || name.includes('cto') || name.includes('occupancy')) {
+    stage = 'Stage C: Commissioning / Pre-operation Stage';
+  }
+
+  let formName = 'Standard CAF';
+  let requirementType = 'BASE';
+
+  if (name.includes('factory licence')) {
+    formName = s.includes('maharashtra') ? 'DISH Maharashtra Form 2' : s.includes('up') ? 'UP DGFASLI Form 2' : s.includes('tn') ? 'DISHTN Form 2' : 'Form 2 (Factories Rules)';
+  } else if (name.includes('fire noc')) {
+    formName = s.includes('maharashtra') ? 'MIDC Fire NOC Form-A' : s.includes('up') ? 'Nivesh Mitra Fire NOC Form' : s.includes('tn') ? 'TNFRS Fire NOC Form-1' : 'Fire Prevention Form-A';
+  } else if (name.includes('pollution')) {
+    formName = s.includes('maharashtra') ? 'MPCB Single Window CTE/CTO' : s.includes('up') ? 'UPPCB CTO application' : s.includes('tn') ? 'TNPCB OCMMS CTE/CTO' : 'GPCB Consent to Operate (CTO)';
+  } else if (name.includes('labour')) {
+    formName = s.includes('maharashtra') ? 'MAITRI Integrated Labour CAF' : s.includes('up') ? 'UP Labour Act Form A' : 'Labour Welfare Form A';
+  } else if (name.includes('electricity')) {
+    formName = s.includes('maharashtra') ? 'MSEDCL Industrial Load CAF' : s.includes('up') ? 'UPPCL Nivesh Mitra Power CAF' : 'DISCOM connection + Electrical Inspector';
+  } else if (name.includes('udyam')) {
+    formName = 'Udyam Registration Portal CAF';
+  } else if (name.includes('tax')) {
+    formName = 'PT Enrollment CAF';
+  } else if (name.includes('fssai')) {
+    formName = 'FoSCoS Form-B';
+    stage = 'Stage D: Industry-Specific Compliance';
+    requirementType = 'IF APPLICABLE';
+  } else if (name.includes('bis') || name.includes('wpc') || name.includes('epr')) {
+    formName = 'BIS CRS Form-I & CPCB EPR-Portal';
+    stage = 'Stage D: Industry-Specific Compliance';
+    requirementType = 'IF APPLICABLE';
+  } else if (name.includes('hazardous')) {
+    formName = 'Form 1 HWM Rules 2016';
+    stage = 'Stage D: Industry-Specific Compliance';
+    requirementType = 'IF APPLICABLE';
+  } else if (name.includes('drug') || name.includes('gmp')) {
+    formName = 'Form 25 / Form 28 Drug Controller';
+    stage = 'Stage D: Industry-Specific Compliance';
+    requirementType = 'IF APPLICABLE';
+  } else if (name.includes('boiler') || name.includes('lifting')) {
+    formName = 'Form B Boiler Inspectorate CAF';
+    stage = 'Stage D: Industry-Specific Compliance';
+    requirementType = 'IF APPLICABLE';
+  }
+
+  return { ...app, stage, formName, requirementType, routing: getStatePortalBadge(state) };
+}
+
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 const api = axios.create({
@@ -176,23 +244,79 @@ export const intakeAPI = async (text) => {
   return api.post('/ai/intake', { text });
 };
 
+export const generateApprovalsForBusiness = (data) => {
+  let approvals = [
+    { id: 'b1', name: 'Entity/PAN Registration', department: 'Finance', docs: ['ID Proof'], slaDays: 3, riskTier: 'low', status: 'not_started', needsInspection: false },
+    { id: 'b2', name: 'GST Registration', department: 'Finance', docs: ['PAN'], slaDays: 5, riskTier: 'low', status: 'not_started', needsInspection: false },
+    { id: 'b3', name: 'Udyam Registration', department: 'MSME', docs: ['Aadhar'], slaDays: 3, riskTier: 'low', status: 'not_started', needsInspection: false },
+    { id: 'b4', name: 'Project DPR', department: 'Industries', docs: ['Project Report'], slaDays: 7, riskTier: 'low', status: 'not_started', needsInspection: false },
+    { id: 'b5', name: data.estate === 'estate' ? 'Estate Land Allotment' : 'NA Conversion / CLU', department: 'Revenue/Estate', docs: ['Land Deed'], slaDays: 30, riskTier: 'medium', status: 'not_started', needsInspection: false },
+    { id: 'b6', name: 'Building Plan Approval', department: 'Urban Planning', docs: ['Blueprint'], slaDays: 21, riskTier: 'high', status: 'not_started', needsInspection: true },
+    { id: 'b7', name: 'Fire NOC', department: 'Safety', docs: ['Building Plan'], slaDays: 21, riskTier: 'high', status: 'not_started', needsInspection: true },
+    { id: 'b8', name: 'Factory Plan Approval', department: 'Industrial Safety', docs: ['Site Plan'], slaDays: 15, riskTier: 'high', status: 'not_started', needsInspection: true },
+    { id: 'b9', name: 'Factory Licence', department: 'Industrial Safety', docs: ['Factory Plan'], slaDays: 15, riskTier: 'medium', status: 'not_started', needsInspection: true },
+    { id: 'b10', name: 'SPCB CTE/CTO (Pollution Consent)', department: 'Environment', docs: ['Waste Plan'], slaDays: 30, riskTier: 'high', status: 'not_started', needsInspection: true },
+    { id: 'b11', name: 'Electricity/DISCOM Connection', department: 'Utilities', docs: ['Load Estimate'], slaDays: 14, riskTier: 'medium', status: 'not_started', needsInspection: true },
+    { id: 'b12', name: 'Water/Drainage Approval', department: 'Utilities', docs: ['Site Plan'], slaDays: 10, riskTier: 'low', status: 'not_started', needsInspection: false },
+  ];
+
+  if (data.sector === 'Food Processing') {
+    approvals.push({ id: 'f1', name: 'FSSAI FoSCoS Form-B', department: 'Health', docs: ['Water Test', 'Layout'], slaDays: 30, riskTier: 'high', status: 'not_started', needsInspection: true });
+    approvals.push({ id: 'f2', name: 'Food Safety Management Plan', department: 'Health', docs: ['FSMS Plan'], slaDays: 15, riskTier: 'medium', status: 'not_started', needsInspection: false });
+    approvals.push({ id: 'f3', name: 'Water Test Report Approval', department: 'Health', docs: ['Lab Report'], slaDays: 7, riskTier: 'low', status: 'not_started', needsInspection: false });
+  }
+  
+  if (data.sector === 'Electronics') {
+    approvals.push({ id: 'e1', name: 'BIS Compulsory Certification / CRS', department: 'Standards', docs: ['Product Manual'], slaDays: 45, riskTier: 'high', status: 'not_started', needsInspection: true });
+  }
+  
+  if (data.wirelessEwaste) {
+    approvals.push({ id: 'w1', name: 'WPC ETA / Licence', department: 'Telecom', docs: ['RF Report'], slaDays: 30, riskTier: 'high', status: 'not_started', needsInspection: false });
+    approvals.push({ id: 'w2', name: 'CPCB E-waste / Battery EPR', department: 'Environment', docs: ['EPR Plan'], slaDays: 40, riskTier: 'high', status: 'not_started', needsInspection: false });
+  }
+  
+  if (data.sector === 'Chemical' || data.hazardous) {
+    if (data.hazardous) {
+      approvals.push({ id: 'c1', name: 'Hazardous-waste management authorisation', department: 'Environment', docs: ['Waste Plan'], slaDays: 45, riskTier: 'high', status: 'not_started', needsInspection: true });
+      approvals.push({ id: 'c2', name: 'Regulated Storage Approval', department: 'Safety', docs: ['Storage Plan'], slaDays: 20, riskTier: 'high', status: 'not_started', needsInspection: true });
+      approvals.push({ id: 'c3', name: 'Hazardous-process Compliance', department: 'Industrial Safety', docs: ['Process Details'], slaDays: 30, riskTier: 'high', status: 'not_started', needsInspection: true });
+    }
+  }
+  
+  if (data.sector === 'Pharmaceuticals & Medical Devices') {
+    approvals.push({ id: 'p1', name: 'Drug/Device Manufacturing Licence', department: 'CDSCO', docs: ['Master Formula'], slaDays: 60, riskTier: 'high', status: 'not_started', needsInspection: true });
+    approvals.push({ id: 'p2', name: 'CDSCO/State Product Approval', department: 'CDSCO', docs: ['Clinical Data'], slaDays: 90, riskTier: 'high', status: 'not_started', needsInspection: false });
+    approvals.push({ id: 'p3', name: 'GMP/QMS Validation', department: 'CDSCO', docs: ['QMS Manual'], slaDays: 30, riskTier: 'medium', status: 'not_started', needsInspection: true });
+  }
+  
+  if (data.groundwaterBoiler || data.sector === 'Textile' || data.sector === 'General Manufacturing') {
+    if (data.groundwaterBoiler) {
+      approvals.push({ id: 't1', name: 'Boiler/Thermic-fluid Inspection', department: 'Industrial Safety', docs: ['Boiler Specs'], slaDays: 15, riskTier: 'high', status: 'not_started', needsInspection: true });
+      approvals.push({ id: 't2', name: 'Lifting Equipment Certification', department: 'Industrial Safety', docs: ['Load Test'], slaDays: 15, riskTier: 'medium', status: 'not_started', needsInspection: true });
+    }
+  }
+
+  if (data.sector === 'Other (Custom Sector / Industry)' && data.customSector) {
+    approvals.push({ id: 'custom1', name: `${data.customSector} Specific Permissions & Technical Compliance`, department: 'Industry Specific', docs: ['Technical Details'], slaDays: 30, riskTier: 'high', status: 'not_started', needsInspection: true });
+  }
+  
+  if (data.otherCompliance && data.customOtherCompliance) {
+    approvals.push({ id: 'custom2', name: data.customOtherCompliance, department: 'Special Approval', docs: ['Relevant Documents'], slaDays: 30, riskTier: 'medium', status: 'not_started', needsInspection: false });
+  }
+
+  return approvals;
+};
+
 export const submitApplicationAPI = async (data) => {
   if (USE_MOCK) {
     return new Promise((resolve) => {
       setTimeout(() => {
+        const approvals = generateApprovalsForBusiness(data);
         resolve({
           data: {
-            application: { id: 'APP-999' },
-            approvals: [
-              { id: 'a1', name: 'Factory Licence', department: 'Industrial', docs: ['ID Proof', 'Site Plan'], slaDays: 15, riskTier: 'medium', status: 'not_started', needsInspection: false },
-              { id: 'a2', name: 'Fire NOC', department: 'Safety', docs: ['Building Plan'], slaDays: 21, riskTier: 'high', status: 'not_started', needsInspection: true },
-              { id: 'a3', name: 'Pollution Consent', department: 'Environment', docs: ['Waste Plan'], slaDays: 30, riskTier: 'high', status: 'not_started', needsInspection: true },
-              { id: 'a4', name: 'Labour Registration', department: 'Labour', docs: ['Employee List'], slaDays: 7, riskTier: 'low', status: 'not_started', needsInspection: false },
-              { id: 'a5', name: 'Electricity Connection', department: 'Utilities', docs: ['Load Estimate'], slaDays: 14, riskTier: 'medium', status: 'not_started', needsInspection: false },
-              { id: 'a6', name: 'Udyam Registration', department: 'MSME', docs: ['Aadhar'], slaDays: 3, riskTier: 'low', status: 'not_started', needsInspection: false },
-              { id: 'a7', name: 'Professional Tax', department: 'Finance', docs: ['PAN'], slaDays: 7, riskTier: 'low', status: 'not_started', needsInspection: false },
-            ],
-            estimatedDays: 24,
+            application: { id: 'APP-' + Math.floor(Math.random() * 10000) },
+            approvals,
+            estimatedDays: 45,
           },
         });
       }, 1000);
@@ -234,11 +358,55 @@ export const getApprovalAPI = async (id) => {
             escalated: req.escalated,
             riskTier: req.riskTier,
             needsInspection: req.needsInspection,
-            requiredDocs: REQUIRED_DOCS_PER_REQUEST[id] || [
-              { docType: 'Building Plan', label: 'Building Plan', required: true },
-              { docType: 'Fire Safety Plan', label: 'Fire Safety Plan', required: true },
-              { docType: 'Lease Deed', label: 'Lease Deed', required: true },
-            ],
+            requiredDocs: (() => {
+              if (REQUIRED_DOCS_PER_REQUEST[id]) return REQUIRED_DOCS_PER_REQUEST[id];
+              const name = req.name.toLowerCase();
+              if (name.includes('fssai')) return [
+                { docType: 'FoSCoS Form-B', label: 'FoSCoS Form-B', required: true },
+                { docType: 'Manufacturing Layout', label: 'Manufacturing Layout', required: true },
+                { docType: 'Machinery List with HP', label: 'Machinery List with HP', required: true },
+                { docType: 'Potable Water Lab Report', label: 'Potable Water Lab Report', required: true },
+                { docType: 'Premises Proof', label: 'Premises Proof', required: true }
+              ];
+              if (name.includes('bis') || name.includes('wpc') || name.includes('epr')) return [
+                { docType: 'EPR Action Plan', label: 'EPR Action Plan', required: true },
+                { docType: 'Product Manual', label: 'Product Manual', required: true },
+                { docType: 'ISO Certificate', label: 'ISO Certificate', required: true }
+              ];
+              if (name.includes('hazardous')) return [
+                { docType: 'HWM Form 1', label: 'HWM Form 1', required: true },
+                { docType: 'Flow Chart', label: 'Flow Chart', required: true },
+                { docType: 'ETP Adequacy Report', label: 'ETP Adequacy Report', required: true }
+              ];
+              if (name.includes('drug') || name.includes('gmp')) return [
+                { docType: 'Form 25', label: 'Form 25', required: true },
+                { docType: 'Site Master File', label: 'Site Master File', required: true },
+                { docType: 'QA Manual', label: 'QA Manual', required: true }
+              ];
+              if (name.includes('boiler') || name.includes('lifting')) return [
+                { docType: 'Maker\'s Stamp', label: 'Maker\'s Stamp', required: true },
+                { docType: 'Form III-C', label: 'Form III-C', required: true },
+                { docType: 'NDT Report', label: 'NDT Report', required: true }
+              ];
+              if (name.includes('factory')) return [
+                { docType: 'Factory Plan', label: 'Factory Plan', required: true },
+                { docType: 'Stability Certificate', label: 'Stability Certificate', required: true },
+                { docType: 'Health Register', label: 'Health Register', required: true }
+              ];
+              if (name.includes('pollution') || name.includes('cto') || name.includes('cte')) return [
+                { docType: 'Waste Management Plan', label: 'Waste Management Plan', required: true },
+                { docType: 'ETP Blueprint', label: 'ETP Blueprint', required: true }
+              ];
+              if (name.includes('fire')) return [
+                { docType: 'Fire Safety Plan', label: 'Fire Safety Plan', required: true },
+                { docType: 'Escape Route Map', label: 'Escape Route Map', required: true }
+              ];
+              return [
+                { docType: 'Building Plan', label: 'Building Plan', required: true },
+                { docType: 'Fire Safety Plan', label: 'Fire Safety Plan', required: true },
+                { docType: 'Lease Deed', label: 'Lease Deed', required: true }
+              ];
+            })(),
             documents: docs.map((d) => ({
               ...d,
               declaredFields: d.declaredFields
@@ -641,15 +809,15 @@ export const KNOWLEDGE_BASE = [
     name: 'Fire NOC',
     department: 'Fire Dept',
     slaDays: 14,
-    docs: ['Building Plan', 'Fire Safety Plan', 'Site Layout', 'Lease Deed'],
+    docs: ['Building Plan', 'Fire Safety Plan', 'Escape Route Map', 'Lease Deed'],
     keywords: ['fire', 'noc', 'fire safety', 'aag', 'fd-01'],
   },
   {
     sourceRef: 'ENV-02',
-    name: 'Pollution Consent',
+    name: 'Pollution Consent (CTE/CTO)',
     department: 'Environment',
     slaDays: 30,
-    docs: ['Environmental Management Plan', 'Effluent Treatment Layout', 'Site Clearance'],
+    docs: ['Waste Management Plan', 'ETP Blueprint', 'Site Clearance'],
     keywords: ['pollution', 'environment', 'consent', 'cte', 'cto', 'environmental', 'pradushan', 'env-02'],
   },
   {
@@ -657,7 +825,7 @@ export const KNOWLEDGE_BASE = [
     name: 'Factory Licence',
     department: 'Industrial',
     slaDays: 20,
-    docs: ['Factory Plan Approval', 'Machinery Layout', 'Worker Safety Certificate', 'Stability Certificate'],
+    docs: ['Factory Plan', 'Stability Certificate', 'Health Register'],
     keywords: ['factory', 'licence', 'license', 'industrial', 'machinery', 'karkhana', 'ind-03'],
   },
   {
@@ -700,6 +868,46 @@ export const KNOWLEDGE_BASE = [
     docs: ['Joint Site Verification Checklist', 'Self-Certification'],
     keywords: ['combined', 'inspection', 'inspections', 'joint', 'combine', 'together', 'saath', 'visit', 'adm-08'],
   },
+  {
+    sourceRef: 'FSSAI-09',
+    name: 'FSSAI License',
+    department: 'Food Safety & Standards',
+    slaDays: 60,
+    docs: ['FoSCoS Form-B', 'Premises Blueprint', 'Recall Plan', 'Water Test Report'],
+    keywords: ['fssai', 'food', 'food safety', 'foscos', 'fssai-09'],
+  },
+  {
+    sourceRef: 'BIS-10',
+    name: 'BIS/WPC/EPR Compliance',
+    department: 'Standards & IT',
+    slaDays: 45,
+    docs: ['EPR Action Plan', 'Product Manual', 'ISO Certificate'],
+    keywords: ['bis', 'wpc', 'epr', 'standards', 'it', 'bis-10'],
+  },
+  {
+    sourceRef: 'HAZ-11',
+    name: 'Hazardous Waste Authorization',
+    department: 'Environment',
+    slaDays: 30,
+    docs: ['HWM Form 1', 'Flow Chart', 'ETP Adequacy Report'],
+    keywords: ['hazardous', 'waste', 'hwm', 'haz-11'],
+  },
+  {
+    sourceRef: 'DRUG-12',
+    name: 'Drug Controller License',
+    department: 'Health',
+    slaDays: 90,
+    docs: ['Form 25', 'Site Master File', 'QA Manual'],
+    keywords: ['drug', 'gmp', 'pharma', 'health', 'drug-12'],
+  },
+  {
+    sourceRef: 'BOIL-13',
+    name: 'Boiler / Lifting Equipment Registration',
+    department: 'Industrial Safety',
+    slaDays: 25,
+    docs: ['Maker\'s Stamp', 'Form III-C', 'NDT Report'],
+    keywords: ['boiler', 'lifting', 'equipment', 'boil-13'],
+  }
 ];
 
 const askCache = new Map();
@@ -752,7 +960,7 @@ export const askAssistantAPI = async (question) => {
         } else {
           result = {
             ok: true,
-            answer: "I don't have verified information on this. Please contact the concerned department officer.",
+            answer: "I am strictly grounded to master regulations and statutory acts. I cannot answer this off-topic query. Please use the application thread to talk to an officer for further assistance.",
             sources: [],
             confident: false,
           };

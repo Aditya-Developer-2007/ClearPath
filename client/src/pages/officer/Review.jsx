@@ -76,9 +76,9 @@ function ActionModal({ type, onClose, onSubmit, loading }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-white rounded border border-border shadow-lg w-full max-w-md p-6 space-y-4"
+        className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-8 space-y-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -102,30 +102,30 @@ function ActionModal({ type, onClose, onSubmit, loading }) {
           onChange={(e) => setNote(e.target.value)}
           rows={4}
           placeholder={isQuery ? 'e.g. The address on the Lease Deed does not match…' : 'e.g. Hazardous material declaration is missing…'}
-          className="w-full border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
+          className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 bg-slate-50 text-slate-900 placeholder:text-slate-400 shadow-sm resize-none transition-all"
         />
 
         {note.trim().length > 0 && note.trim().length < minLen && (
           <p className="text-xs text-amber-600">Note must be at least {minLen} characters.</p>
         )}
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 pt-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm border border-border rounded hover:bg-gray-50 transition-colors"
+            className="px-5 py-2.5 text-sm font-bold border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 hover:border-slate-300 active:scale-[0.97] transition-all duration-75 shadow-sm"
           >
             Cancel
           </button>
           <button
             onClick={() => onSubmit(note)}
             disabled={!canSubmit}
-            className={`flex items-center gap-2 px-4 py-2 text-sm rounded font-medium transition-colors ${
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-lg shadow-sm transition-all duration-75 active:scale-[0.97] ${
               isReject
-                ? 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-40'
-                : 'bg-primary text-white hover:bg-teal-800 disabled:opacity-40'
+                ? 'bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-40 disabled:active:scale-100'
+                : 'bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-40 disabled:active:scale-100'
             } disabled:cursor-not-allowed`}
           >
-            {loading && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             {isQuery ? 'Send query' : 'Reject'}
           </button>
         </div>
@@ -137,9 +137,9 @@ function ActionModal({ type, onClose, onSubmit, loading }) {
 // ── Approve confirm ────────────────────────────────────────────────────────
 function ApproveConfirm({ onClose, onConfirm, loading }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-white rounded border border-border shadow-lg w-full max-w-sm p-6 space-y-4"
+        className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm p-8 space-y-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -151,20 +151,20 @@ function ApproveConfirm({ onClose, onConfirm, loading }) {
         <p className="text-sm text-gray-600">
           This will mark the application as approved. The applicant will be notified.
         </p>
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 pt-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm border border-border rounded hover:bg-gray-50 transition-colors"
+            className="px-5 py-2.5 text-sm font-bold border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 hover:border-slate-300 active:scale-[0.97] transition-all duration-75 shadow-sm"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-status-approved text-white rounded text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 transition-all duration-75 shadow-sm"
           >
-            {loading && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-            <Check size={14} /> Approve
+            {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            <Check size={16} strokeWidth={2.5} /> Approve
           </button>
         </div>
       </div>
@@ -351,36 +351,38 @@ export default function OfficerReview() {
       <div>
         <Link
           to="/officer/queue"
-          className="text-sm text-gray-500 hover:text-primary flex items-center gap-1 w-fit mb-4"
+          className="text-xs text-slate-500 font-bold uppercase tracking-widest hover:text-slate-900 transition-colors flex items-center gap-1.5 w-fit mb-6"
         >
-          <ArrowLeft size={15} /> Back to queue
+          <ArrowLeft size={14} strokeWidth={2.5} /> Back to queue
         </Link>
 
         {/* Header card */}
-        <div className="bg-white border border-border rounded p-5 shadow-sm space-y-4">
-          <div className="flex flex-col md:flex-row md:items-start gap-4 justify-between">
-            <div className="space-y-2">
+        <div className="bg-white shadow-sm border border-slate-200/75 rounded-2xl p-6 md:p-8 space-y-5">
+          <div className="flex flex-col md:flex-row md:items-start gap-5 justify-between">
+            <div className="space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-headings text-[#0A1128]">{approval.name}</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">{approval.name}</h1>
                 <StatusBadge status={approval.status} isOverdue={sla.isOverdue} />
                 <RiskBadge tier={approval.riskTier} />
                 {approval.escalated && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-800 text-[10px] uppercase font-bold rounded tracking-wide">
-                    <ShieldAlert size={10} /> Escalated
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 text-rose-800 border border-rose-200/80 text-[10px] uppercase font-bold rounded-md tracking-wider">
+                    <ShieldAlert size={12} strokeWidth={2.5} /> Escalated
                   </span>
                 )}
               </div>
-              <div className="text-sm text-gray-600 flex items-center gap-4 flex-wrap">
-                <span className="flex items-center gap-1.5">
-                  <UserIcon size={13} /> {approval.applicantName}
+              <div className="text-sm font-medium text-slate-500 flex items-center gap-4 flex-wrap">
+                <span className="flex items-center gap-1.5 text-slate-700 font-bold">
+                  <UserIcon size={14} /> {approval.applicantName}
                 </span>
+                <span className="text-slate-300">&bull;</span>
                 <span>{approval.unitName}</span>
+                <span className="text-slate-300">&bull;</span>
                 <span>{approval.department}</span>
               </div>
             </div>
-            <div className="flex flex-col md:items-end gap-2">
-              <div className={`font-mono text-sm font-semibold flex items-center gap-1.5 ${sla.color}`}>
-                <Clock size={14} /> {sla.text}
+            <div className="flex flex-col md:items-end gap-3 shrink-0">
+              <div className={`font-mono text-sm font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-slate-50 ${sla.color} ${sla.isOverdue ? 'border-rose-200 bg-rose-50' : 'border-slate-200'}`}>
+                <Clock size={16} strokeWidth={2.5} /> {sla.text}
               </div>
               <RouteTrack currentStep={currentStep} />
             </div>
@@ -409,18 +411,18 @@ export default function OfficerReview() {
         <div className="space-y-6">
 
           {/* AI Summary card */}
-          <div className="bg-white border border-border rounded p-5 shadow-sm space-y-4">
+          <div className="bg-white shadow-sm border border-slate-200/75 rounded-2xl p-6 md:p-8 space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="font-headings text-base text-[#0A1128]">Application summary</h2>
+              <h2 className="font-bold tracking-tight text-lg text-slate-900">Application summary</h2>
               {!aiSummary && (
                 <button
                   onClick={handleGenerateSummary}
                   disabled={aiLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded text-xs font-medium hover:bg-teal-800 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-slate-800 active:scale-[0.97] transition-all duration-75 disabled:opacity-50"
                 >
                   {aiLoading
-                    ? <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating…</>
-                    : <><Sparkles size={12} /> Generate summary</>}
+                    ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating…</>
+                    : <><Sparkles size={14} strokeWidth={2.5} /> Generate summary</>}
                 </button>
               )}
             </div>
@@ -460,11 +462,11 @@ export default function OfficerReview() {
 
             {/* Applicant profile */}
             {approval.applicantProfile && (
-              <div className="border-t border-border pt-4 space-y-2">
-                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+              <div className="border-t border-slate-200/80 pt-5 mt-5 space-y-4">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                   Applicant profile
                 </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                   {[
                     ['Applicant', approval.applicantProfile.name],
                     ['Sector', approval.applicantProfile.sector],
@@ -475,8 +477,8 @@ export default function OfficerReview() {
                     ['Address', approval.applicantProfile.address],
                   ].map(([k, v]) => (
                     <div key={k} className="flex flex-col col-span-1">
-                      <span className="text-xs text-gray-400">{k}</span>
-                      <span className="text-[#0A1128] font-medium text-xs">{v}</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">{k}</span>
+                      <span className="text-slate-900 font-medium text-xs">{v}</span>
                     </div>
                   ))}
                 </div>
@@ -485,8 +487,8 @@ export default function OfficerReview() {
           </div>
 
           {/* Documents card */}
-          <div className="bg-white border border-border rounded p-5 shadow-sm space-y-4">
-            <h2 className="font-headings text-base text-[#0A1128]">Documents</h2>
+          <div className="bg-white shadow-sm border border-slate-200/75 rounded-2xl p-6 md:p-8 space-y-5">
+            <h2 className="font-bold tracking-tight text-lg text-slate-900">Documents</h2>
 
             {/* Required docs — show missing ones first */}
             <div className="space-y-3">
@@ -553,9 +555,9 @@ export default function OfficerReview() {
         <div className="space-y-6">
 
           {/* Thread */}
-          <div className="bg-white border border-border rounded shadow-sm">
-            <div className="p-4 border-b border-border">
-              <h2 className="font-headings text-base text-[#0A1128]">Thread</h2>
+          <div className="bg-white shadow-sm border border-slate-200/75 rounded-2xl overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-200/80 bg-slate-50/50">
+              <h2 className="font-bold tracking-tight text-lg text-slate-900">Thread</h2>
             </div>
 
             {/* Messages — NO max-h or overflow-y here */}
@@ -586,7 +588,7 @@ export default function OfficerReview() {
             </div>
 
             {/* Reply box */}
-            <div className="p-3 border-t border-border flex items-center gap-2">
+            <div className="p-4 border-t border-slate-200/80 flex items-center gap-3 bg-white mt-auto">
               <input
                 type="text"
                 value={replyText}
@@ -594,32 +596,32 @@ export default function OfficerReview() {
                 onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
                 placeholder="Type a message…"
                 disabled={isLocked}
-                className="flex-1 border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary disabled:bg-gray-50 disabled:text-gray-400"
+                className="flex-1 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 shadow-sm disabled:bg-slate-50 disabled:text-slate-400 text-slate-900 placeholder:text-slate-400 transition-all"
               />
               <button
                 onClick={handleSendReply}
                 disabled={!replyText.trim() || isLocked}
-                className="p-2 bg-primary text-white rounded hover:bg-teal-800 disabled:opacity-40 transition-colors"
+                className="p-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-40 transition-all duration-75 active:scale-[0.97] shadow-sm shrink-0"
               >
-                <Send size={16} />
+                <Send size={16} strokeWidth={2.5} />
               </button>
             </div>
           </div>
 
           {/* Timeline */}
-          <div className="bg-white border border-border rounded shadow-sm p-4">
-            <h2 className="font-headings text-base text-[#0A1128] mb-4">Timeline</h2>
-            <div className="space-y-4 border-l-2 border-gray-100 ml-2 pl-4">
+          <div className="bg-white shadow-sm border border-slate-200/75 rounded-2xl p-6 md:p-8">
+            <h2 className="font-bold tracking-tight text-lg text-slate-900 mb-5">Timeline</h2>
+            <div className="space-y-5 border-l-2 border-slate-100 ml-2.5 pl-5 relative">
               {(approval.activityLog || []).map((log, i) => (
                 <div key={i} className="relative flex flex-col gap-1">
-                  <div className="absolute w-3 h-3 bg-gray-200 rounded-full -left-[1.35rem] top-1.5 border-2 border-white" />
+                  <div className="absolute w-3.5 h-3.5 bg-slate-200 rounded-full -left-[1.7rem] top-1 border-[3px] border-white shadow-sm" />
                   <div className="flex justify-between items-start gap-2">
-                    <span className="font-medium text-sm text-[#0A1128]">{log.action}</span>
-                    <span className="text-[10px] text-gray-400 font-mono shrink-0">{getRelativeTime(log.timestamp)}</span>
+                    <span className="font-bold text-sm text-slate-900 leading-snug">{log.action}</span>
+                    <span className="text-[10px] text-slate-400 font-mono font-bold tracking-wider shrink-0">{getRelativeTime(log.timestamp)}</span>
                   </div>
-                  <span className="text-xs text-gray-500">By {log.by}</span>
+                  <span className="text-xs font-medium text-slate-500">By {log.by}</span>
                   {log.note && (
-                    <div className="mt-1 text-xs text-gray-700 bg-gray-50 p-2 rounded">{log.note}</div>
+                    <div className="mt-2 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-100 p-3 rounded-lg">{log.note}</div>
                   )}
                 </div>
               ))}
@@ -629,51 +631,51 @@ export default function OfficerReview() {
       </div>
 
       {/* Action bar */}
-      <div className="bg-white border border-border rounded p-4 shadow-sm">
+      <div className="bg-white shadow-xl border border-slate-200/50 rounded-2xl p-6 md:p-8 sticky bottom-6 z-20">
         {isLocked ? (
           <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full shrink-0 ${approval.status === 'approved' ? 'bg-status-approved' : 'bg-status-rejected'}`} />
-            <p className="text-sm font-medium text-gray-600">{lockReason}</p>
+            <div className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-sm ${approval.status === 'approved' ? 'bg-green-500' : 'bg-rose-500'}`} />
+            <p className="text-sm font-bold text-slate-700">{lockReason}</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center gap-3 flex-wrap">
               {/* Approve */}
               <div className="relative group">
                 <button
                   onClick={() => !approveBlockReason && setModal('approve')}
                   disabled={!!approveBlockReason}
-                  className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-all duration-75 active:scale-[0.97] ${
                     approveBlockReason
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-status-approved text-white hover:opacity-90'
+                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                      : 'bg-green-600 text-white hover:bg-green-700'
                   }`}
                 >
-                  <Check size={15} /> Approve
+                  <Check size={16} strokeWidth={2.5} /> Approve
                 </button>
               </div>
 
               {/* Raise query */}
               <button
                 onClick={() => setModal('query')}
-                className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded text-sm font-medium hover:bg-primary/5 transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 hover:border-slate-400 transition-all duration-75 active:scale-[0.97]"
               >
-                <MessageSquareWarning size={15} /> Raise query
+                <MessageSquareWarning size={16} strokeWidth={2.5} /> Raise query
               </button>
 
               {/* Reject */}
               <button
                 onClick={() => setModal('reject')}
-                className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-700 rounded text-sm font-medium hover:bg-red-50 transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-rose-200 text-rose-700 rounded-lg text-sm font-bold shadow-sm hover:bg-rose-50 transition-all duration-75 active:scale-[0.97]"
               >
-                <XCircle size={15} /> Reject
+                <XCircle size={16} strokeWidth={2.5} /> Reject
               </button>
             </div>
 
             {/* Blocking reason for approve */}
             {approveBlockReason && (
-              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 flex items-center gap-2">
-                <AlertTriangle size={14} className="shrink-0" />
+              <p className="text-sm font-medium text-amber-800 bg-amber-50 border border-amber-200/80 rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
+                <AlertTriangle size={16} className="shrink-0 text-amber-600" strokeWidth={2.5} />
                 {approveBlockReason}
               </p>
             )}
