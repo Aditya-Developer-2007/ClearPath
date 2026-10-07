@@ -71,7 +71,7 @@ export default function AppShell() {
   return (
     <div className="flex h-screen bg-slate-50">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col justify-between w-[266px] border-r border-slate-900 bg-slate-950 h-full relative">
+      <aside className="hidden md:flex flex-col justify-between w-80 border-r border-slate-900 bg-slate-950 h-full relative shrink-0">
         <div className="flex flex-col min-h-0 flex-1">
           <div className="p-5 border-b border-slate-800 flex items-center gap-2.5 shrink-0">
             <svg
