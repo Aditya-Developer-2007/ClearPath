@@ -101,28 +101,28 @@ export default function AdminInspections() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 stagger-1">
         <div>
-          <h1 className="text-2xl font-headings text-[#0A1128]">Inspection planner</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Inspection planner</h1>
+          <p className="text-sm font-medium text-slate-500 mt-1">
             Group multi-department site visits into single unified inspections to reduce business disruption.
           </p>
         </div>
         {import.meta.env.DEV && (
           <button
             onClick={handleReset}
-            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 border border-border rounded text-xs text-gray-600 hover:text-text hover:bg-gray-50 transition-colors"
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300 transition-all duration-75 active:scale-[0.97]"
           >
-            <RotateCcw size={13} /> Reset demo
+            <RotateCcw size={14} strokeWidth={2.5} /> Reset demo
           </button>
         )}
       </div>
 
       {/* Explainer banner */}
-      <div className="bg-teal-50/60 border border-teal-200/80 rounded-lg p-4 flex items-start gap-3">
-        <Sparkles size={18} className="text-teal-700 shrink-0 mt-0.5" />
-        <div className="text-xs text-gray-700 leading-relaxed">
-          <strong className="text-teal-900 block mb-0.5">Automated Joint Visit Clustering:</strong>
+      <div className="bg-slate-900 rounded-2xl p-6 flex items-start gap-4 shadow-xl stagger-2">
+        <Sparkles size={20} className="text-teal-400 shrink-0 mt-0.5" strokeWidth={2.5} />
+        <div className="text-sm font-medium text-slate-300 leading-relaxed">
+          <strong className="text-slate-100 font-bold tracking-tight block mb-1">Automated Joint Visit Clustering:</strong>
           ClearPath identifies units with overlapping physical inspection mandates (e.g. Fire Safety + Environmental Clearances) and coordinates multi-agency officer visits into a single scheduled appointment.
         </div>
       </div>
@@ -131,7 +131,7 @@ export default function AdminInspections() {
       {proposals.length === 0 ? (
         <EmptyState message="No pending inspection proposals found." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger-3">
           {proposals.map((proposal) => {
             const isScheduled = proposal.status === 'scheduled';
             const isBusy = schedulingId === proposal.id;
@@ -140,31 +140,31 @@ export default function AdminInspections() {
             return (
               <div
                 key={proposal.id}
-                className={`bg-white border rounded-lg p-5 shadow-sm flex flex-col justify-between transition-all ${
-                  isScheduled ? 'border-teal-200 bg-white' : 'border-border hover:border-gray-300'
+                className={`bg-white border-2 rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md flex flex-col justify-between transition-all duration-200 ${
+                  isScheduled ? 'border-teal-500/30 bg-teal-50/20' : 'border-slate-200/75 hover:border-slate-300'
                 }`}
               >
                 <div className="space-y-4">
                   {/* Card top */}
                   <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Building2 size={16} className="text-primary shrink-0" />
-                        <h2 className="font-headings text-base text-[#0A1128]">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2.5">
+                        <Building2 size={18} className="text-slate-400 shrink-0" strokeWidth={2.5} />
+                        <h2 className="font-bold tracking-tight text-lg text-slate-900">
                           {proposal.unitName}
                         </h2>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        Applicant: <strong className="text-gray-700">{proposal.applicantName}</strong>
+                      <div className="text-xs font-medium text-slate-500">
+                        Applicant: <strong className="text-slate-800 font-bold">{proposal.applicantName}</strong>
                       </div>
                     </div>
 
                     {isScheduled ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold bg-green-50 text-status-approved border border-green-200 shrink-0">
-                        <CheckCircle2 size={13} /> Scheduled
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200/80 shrink-0">
+                        <CheckCircle2 size={14} strokeWidth={2.5} /> Scheduled
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200/80 shrink-0">
                         Proposed
                       </span>
                     )}
@@ -172,14 +172,14 @@ export default function AdminInspections() {
 
                   {/* Grouped Approvals */}
                   <div>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 block mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2.5">
                       Combined clearances
                     </span>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {proposal.approvals.map((appr, idx) => (
                         <span
                           key={idx}
-                          className="px-2.5 py-1 text-xs rounded font-medium bg-gray-100 text-[#0A1128] border border-gray-200"
+                          className="px-3 py-1.5 text-[11px] font-bold rounded-md bg-slate-100 text-slate-700 border border-slate-200/80 shadow-sm"
                         >
                           {appr}
                         </span>
@@ -188,17 +188,17 @@ export default function AdminInspections() {
                   </div>
 
                   {/* Efficiency tag */}
-                  <div className="inline-flex items-center gap-1.5 text-xs text-teal-800 bg-teal-50 px-2.5 py-1 rounded border border-teal-100 font-medium">
-                    <CalendarCheck size={14} className="text-teal-600" />
+                  <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-teal-800 bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-200/80 shadow-sm">
+                    <CalendarCheck size={14} className="text-teal-600" strokeWidth={2.5} />
                     <span>Saves {proposal.visitsSaved} visit{proposal.visitsSaved > 1 ? 's' : ''} for this unit</span>
                   </div>
                 </div>
 
                 {/* Card bottom: Date input + Action button */}
-                <div className="pt-5 mt-5 border-t border-border space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                    <label className="font-medium text-gray-700 flex items-center gap-1.5">
-                      <Calendar size={13} className="text-gray-400" />
+                <div className="pt-6 mt-6 border-t border-slate-100 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <label className="font-bold tracking-tight text-slate-700 flex items-center gap-1.5">
+                      <Calendar size={14} className="text-slate-400" strokeWidth={2.5} />
                       Inspection date:
                     </label>
 
@@ -208,7 +208,7 @@ export default function AdminInspections() {
                         value={currentDate}
                         onChange={(e) => handleDateChange(proposal.id, e.target.value)}
                         disabled={isScheduled || isBusy}
-                        className="px-2.5 py-1 border border-border rounded font-mono text-xs text-gray-800 focus:outline-none focus:border-primary disabled:bg-gray-50 disabled:text-gray-400"
+                        className="px-3 py-1.5 border border-slate-300 rounded-lg font-mono font-bold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 disabled:bg-slate-50 disabled:text-slate-400 shadow-sm transition-all"
                       />
                     </div>
                   </div>
@@ -216,15 +216,15 @@ export default function AdminInspections() {
                   <button
                     onClick={() => handleSchedule(proposal.id)}
                     disabled={isScheduled || isBusy}
-                    className={`w-full py-2 px-4 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                    className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-75 active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm ${
                       isScheduled
-                        ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
-                        : 'bg-primary text-white hover:bg-teal-800 shadow-sm'
+                        ? 'bg-teal-50 text-teal-700 border border-teal-200/80 cursor-not-allowed shadow-none active:scale-100'
+                        : 'bg-slate-900 text-white hover:bg-slate-800'
                     }`}
                   >
                     {isScheduled ? (
                       <>
-                        <CheckCircle2 size={15} /> Scheduled for {currentDate}
+                        <CheckCircle2 size={16} strokeWidth={2.5} /> Scheduled for {currentDate}
                       </>
                     ) : isBusy ? (
                       'Scheduling visit…'

@@ -98,27 +98,27 @@ export default function EscalatedQueue() {
     <div className="max-w-6xl mx-auto space-y-6">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap stagger-1">
         <div>
-          <h1 className="text-2xl font-headings text-[#0A1128]">Escalated</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            <span className="font-mono font-semibold text-red-600">{escalated.length}</span>{' '}
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Escalated</h1>
+          <p className="text-sm font-medium text-slate-500 mt-1">
+            <span className="font-mono font-bold text-rose-600">{escalated.length}</span>{' '}
             case{escalated.length !== 1 ? 's' : ''} requiring priority attention
           </p>
         </div>
         <button
           onClick={load}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all duration-75 active:scale-[0.97]"
         >
-          <RefreshCw size={14} /> Refresh
+          <RefreshCw size={14} strokeWidth={2.5} /> Refresh
         </button>
       </div>
 
       {/* Info strip */}
-      <div className="bg-red-50 border border-red-200 rounded p-4 text-sm text-red-800 flex items-start gap-3">
-        <ShieldAlert size={18} className="shrink-0 text-red-600 mt-0.5" />
-        <div>
-          <strong>Escalated cases</strong> are approvals where the SLA has been breached or a senior officer was
+      <div className="bg-rose-50 border border-rose-200/80 rounded-xl p-4 text-sm text-rose-900 flex items-start gap-3 shadow-sm stagger-2">
+        <ShieldAlert size={18} className="shrink-0 text-rose-600 mt-0.5" strokeWidth={2.5} />
+        <div className="font-medium">
+          <strong className="font-bold text-rose-950">Escalated cases</strong> are approvals where the SLA has been breached or a senior officer was
           requested. They require priority review.
         </div>
       </div>
@@ -128,73 +128,73 @@ export default function EscalatedQueue() {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block bg-white border border-border rounded shadow-sm overflow-hidden">
+          <div className="hidden md:block bg-white shadow-xl border border-slate-200/50 rounded-2xl overflow-hidden stagger-3">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="border-b border-border bg-gray-50/60 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  <th className="w-1 p-0" />
-                  <th className="px-4 py-3 text-left">Applicant / Unit</th>
-                  <th className="px-4 py-3 text-left">Approval</th>
-                  <th className="px-4 py-3 text-left">Risk</th>
-                  <th className="px-4 py-3 text-left">SLA</th>
-                  <th className="px-4 py-3 text-left">Escalated from</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Flags</th>
-                  <th className="px-4 py-3" />
+                <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                  <th className="w-1.5 p-0" />
+                  <th className="px-5 py-4 text-left">Applicant / Unit</th>
+                  <th className="px-5 py-4 text-left">Approval</th>
+                  <th className="px-5 py-4 text-left">Risk</th>
+                  <th className="px-5 py-4 text-left">SLA</th>
+                  <th className="px-5 py-4 text-left">Escalated from</th>
+                  <th className="px-5 py-4 text-left">Status</th>
+                  <th className="px-5 py-4 text-left">Flags</th>
+                  <th className="px-5 py-4" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-slate-100">
                 {escalated.map((row) => {
                   const sla = getSLAInfo(row.slaDeadline, row.status);
                   return (
                     <tr
                       key={row.id}
                       onClick={() => navigate(`/officer/review/${row.id}`)}
-                      className="cursor-pointer transition-colors hover:bg-red-50/30"
+                      className="cursor-pointer transition-all duration-150 hover:bg-rose-50/40 group"
                     >
-                      <td className="p-0 w-1">
-                        <div className="w-1" style={{ backgroundColor: '#ef4444', minHeight: '3.5rem' }} />
+                      <td className="p-0 w-1.5">
+                        <div className="w-1.5" style={{ backgroundColor: '#e11d48', minHeight: '4.5rem' }} />
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-[#0A1128]">{row.applicantName}</div>
-                        <div className="text-xs text-gray-500 truncate max-w-[160px]">{row.unitName}</div>
+                      <td className="px-5 py-4">
+                        <div className="font-bold text-slate-900 group-hover:text-rose-700 transition-colors">{row.applicantName}</div>
+                        <div className="text-xs font-medium text-slate-500 truncate max-w-[160px] mt-0.5">{row.unitName}</div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-[#0A1128]">{row.name}</div>
-                        <div className="text-xs text-gray-500">{row.department}</div>
+                      <td className="px-5 py-4">
+                        <div className="font-bold text-slate-900">{row.name}</div>
+                        <div className="text-xs font-medium text-slate-500 mt-0.5">{row.department}</div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-4">
                         <RiskBadge tier={row.riskTier} />
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`font-mono text-xs font-semibold px-2 py-1 rounded ${sla.chip}`}>
+                      <td className="px-5 py-4">
+                        <span className={`font-mono tabular-nums tracking-tight text-xs px-2 py-0.5 rounded ${sla.chip}`}>
                           {sla.text}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="text-xs text-gray-700">{row.escalatedFrom || '\u2014'}</span>
+                      <td className="px-5 py-4">
+                        <span className="text-xs font-bold text-slate-700">{row.escalatedFrom || '\u2014'}</span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-4">
                         <StatusBadge status={row.status} isOverdue={sla.isOverdue} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-4">
                         <div className="flex items-center gap-2 flex-wrap">
                           {row.warningsCount > 0 && (
-                            <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                              <AlertTriangle size={11} /> {row.warningsCount}
+                            <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/80">
+                              <AlertTriangle size={12} strokeWidth={2.5} /> {row.warningsCount}
                             </span>
                           )}
-                          <span className="flex items-center gap-1 text-xs text-red-700 bg-red-50 px-1.5 py-0.5 rounded font-semibold">
-                            <ShieldAlert size={11} /> Escalated
+                          <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-rose-800 bg-rose-50 border border-rose-200/80 px-1.5 py-0.5 rounded">
+                            <ShieldAlert size={12} strokeWidth={2.5} /> Escalated
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-5 py-4 text-right">
                         <button
                           onClick={(e) => { e.stopPropagation(); navigate(`/officer/review/${row.id}`); }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-all duration-75 active:scale-[0.97] shadow-sm"
                         >
-                          Review <ArrowRight size={12} />
+                          Review <ArrowRight size={14} strokeWidth={2.5} />
                         </button>
                       </td>
                     </tr>
@@ -205,49 +205,49 @@ export default function EscalatedQueue() {
           </div>
 
           {/* Mobile stacked cards */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden space-y-4 stagger-3">
             {escalated.map((row) => {
               const sla = getSLAInfo(row.slaDeadline, row.status);
               return (
                 <div
                   key={row.id}
                   onClick={() => navigate(`/officer/review/${row.id}`)}
-                  className="bg-white border border-red-200 rounded shadow-sm cursor-pointer active:bg-red-50/30 flex overflow-hidden"
+                  className="bg-white border border-rose-200/75 rounded-2xl shadow-sm hover:shadow-md cursor-pointer active:scale-[0.98] transition-all duration-200 flex overflow-hidden"
                 >
-                  <div className="w-1 shrink-0" style={{ backgroundColor: '#ef4444' }} />
-                  <div className="flex-1 p-4 space-y-3 min-w-0">
+                  <div className="w-1.5 shrink-0" style={{ backgroundColor: '#e11d48' }} />
+                  <div className="flex-1 p-5 space-y-4 min-w-0">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-[#0A1128] text-sm">{row.name}</div>
-                        <div className="text-xs text-gray-500 mt-0.5 truncate">{row.applicantName} {row.unitName}</div>
+                        <div className="font-bold text-slate-900 text-sm">{row.name}</div>
+                        <div className="text-xs font-medium text-slate-500 mt-1 truncate">{row.applicantName} &bull; {row.unitName}</div>
                       </div>
-                      <span className={`font-mono text-xs font-semibold px-2 py-1 rounded shrink-0 ${sla.chip}`}>
+                      <span className={`font-mono tabular-nums tracking-tight text-xs px-2 py-0.5 rounded shrink-0 ${sla.chip}`}>
                         {sla.text}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <RiskBadge tier={row.riskTier} />
                       <StatusBadge status={row.status} isOverdue={sla.isOverdue} />
-                      <span className="flex items-center gap-1 text-xs text-red-700 bg-red-50 px-1.5 py-0.5 rounded font-semibold">
-                        <ShieldAlert size={11} /> Escalated
+                      <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-rose-800 bg-rose-50 px-1.5 py-0.5 border border-rose-200/80 rounded">
+                        <ShieldAlert size={12} strokeWidth={2.5} /> Escalated
                       </span>
                       {row.warningsCount > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                          <AlertTriangle size={11} /> {row.warningsCount}
+                        <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-1.5 py-0.5 border border-amber-200/80 rounded">
+                          <AlertTriangle size={12} strokeWidth={2.5} /> {row.warningsCount}
                         </span>
                       )}
                     </div>
                     {row.escalatedFrom && (
-                      <div className="text-xs text-gray-500">
-                        <span className="font-semibold text-gray-700">Escalated from:</span> {row.escalatedFrom}
+                      <div className="text-xs text-slate-500">
+                        <span className="font-bold text-slate-700">Escalated from:</span> {row.escalatedFrom}
                       </div>
                     )}
-                    <div className="flex items-center justify-between pt-1 border-t border-red-100">
-                      <span className="text-xs text-gray-400 font-mono">
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                      <span className="text-xs text-slate-400 font-mono font-bold tracking-wider">
                         Updated {getRelativeTime(row.lastActionAt)}
                       </span>
-                      <span className="flex items-center gap-1 text-xs font-medium text-red-600">
-                        Review <ArrowRight size={12} />
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-rose-600">
+                        Review <ArrowRight size={14} strokeWidth={2.5} />
                       </span>
                     </div>
                   </div>

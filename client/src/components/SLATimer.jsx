@@ -8,6 +8,15 @@ export default function SLATimer({ deadline }) {
     : 0;
   const isOverdue = days < 0;
   const isWarning = days >= 0 && days <= 2;
-  const color = isOverdue ? 'text-status-overdue' : (isWarning ? 'text-status-in_review' : 'text-text');
-  return <span className={`font-mono font-medium ${color}`}>{isOverdue ? 'OVERDUE' : `${days}d left`}</span>;
-}
+  const color = isOverdue
+    ? 'text-rose-700 font-semibold'
+    : isWarning
+    ? 'text-amber-700 font-semibold'
+    : 'text-slate-700 font-medium';
+
+  return (
+    <span className={`font-mono tabular-nums tracking-tight text-xs ${color}`}>
+      {isOverdue ? 'OVERDUE' : `${days}d left`}
+    </span>
+  );
+}

@@ -3,21 +3,31 @@
 @tailwind utilities;
 
 @layer base {
+  body {
+    @apply text-slate-900 bg-slate-50 antialiased overflow-x-hidden;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-headings font-semibold;
+    @apply font-headings font-bold tracking-tight text-slate-900;
   }
 }
 
-.stagger-1 { animation: fadeIn 0.4s ease-out 0.06s both; }
-.stagger-2 { animation: fadeIn 0.4s ease-out 0.12s both; }
-.stagger-3 { animation: fadeIn 0.4s ease-out 0.18s both; }
-.stagger-4 { animation: fadeIn 0.4s ease-out 0.24s both; }
-.stagger-5 { animation: fadeIn 0.4s ease-out 0.30s both; }
-.stagger-6 { animation: fadeIn 0.4s ease-out 0.36s both; }
-.stagger-7 { animation: fadeIn 0.4s ease-out 0.42s both; }
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.stagger-1 { animation: fadeIn 0.25s ease-out 0.04s both; }
+.stagger-2 { animation: fadeIn 0.25s ease-out 0.08s both; }
+.stagger-3 { animation: fadeIn 0.25s ease-out 0.12s both; }
+.stagger-4 { animation: fadeIn 0.25s ease-out 0.16s both; }
+.stagger-5 { animation: fadeIn 0.25s ease-out 0.20s both; }
+.stagger-6 { animation: fadeIn 0.25s ease-out 0.24s both; }
+.stagger-7 { animation: fadeIn 0.25s ease-out 0.28s both; }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 

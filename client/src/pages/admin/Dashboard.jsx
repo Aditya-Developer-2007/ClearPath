@@ -142,104 +142,104 @@ export default function AdminDashboard() {
       `}</style>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
         <div>
-          <h1 className="text-2xl font-headings text-[#0A1128]">Delay analytics</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Admin overview</p>
+          <h1 className="text-2xl font-headings font-semibold tracking-tight text-slate-900">Delay analytics</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Admin overview</p>
         </div>
         {import.meta.env.DEV && (
           <button
             onClick={handleReset}
-            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 border border-border rounded text-xs text-gray-600 hover:text-text hover:bg-gray-50 transition-colors"
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 border border-border rounded text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 active:scale-[0.98] transition-all duration-75 focus-visible:ring-2 focus-visible:ring-primary focus:outline-none"
           >
-            <RotateCcw size={13} /> Reset demo
+            <RotateCcw size={12} strokeWidth={2} /> Reset demo
           </button>
         )}
       </div>
 
       {/* Stat Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-border rounded-lg p-5 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 stagger-2">
+        <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
               Applications
             </span>
-            <Building2 size={16} className="text-gray-400" />
+            <Building2 size={18} strokeWidth={2.5} className="text-slate-300" />
           </div>
-          <div className="mt-2 text-3xl font-mono text-[#0A1128]">{totals.applications}</div>
-          <div className="text-xs text-gray-400 mt-1">across active industrial units</div>
+          <div className="mt-3 text-4xl font-mono tabular-nums tracking-tight font-bold text-slate-900">{totals.applications}</div>
+          <div className="text-[11px] font-medium text-slate-400 mt-1.5">across active industrial units</div>
         </div>
 
-        <div className="bg-white border border-border rounded-lg p-5 shadow-sm">
+        <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
               SLA breaches
             </span>
-            <Clock size={16} className={totals.breaches > 0 ? 'text-status-rejected' : 'text-gray-400'} />
+            <Clock size={18} strokeWidth={2.5} className={totals.breaches > 0 ? 'text-rose-500' : 'text-slate-300'} />
           </div>
           <div
-            className={`mt-2 text-3xl font-mono ${
-              totals.breaches > 0 ? 'text-status-rejected' : 'text-[#0A1128]'
+            className={`mt-3 text-4xl font-mono tabular-nums tracking-tight font-bold ${
+              totals.breaches > 0 ? 'text-rose-600' : 'text-slate-900'
             }`}
           >
             {totals.breaches}
           </div>
-          <div className="text-xs text-gray-400 mt-1">past standard statutory deadline</div>
+          <div className="text-[11px] font-medium text-slate-400 mt-1.5">past standard statutory deadline</div>
         </div>
 
-        <div className="bg-white border border-border rounded-lg p-5 shadow-sm">
+        <div className="bg-white border border-slate-200/75 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
               Escalations
             </span>
-            <ShieldAlert size={16} className={totals.escalations > 0 ? 'text-status-rejected' : 'text-gray-400'} />
+            <ShieldAlert size={18} strokeWidth={2.5} className={totals.escalations > 0 ? 'text-rose-500' : 'text-slate-300'} />
           </div>
           <div
-            className={`mt-2 text-3xl font-mono ${
-              totals.escalations > 0 ? 'text-status-rejected' : 'text-[#0A1128]'
+            className={`mt-3 text-4xl font-mono tabular-nums tracking-tight font-bold ${
+              totals.escalations > 0 ? 'text-rose-600' : 'text-slate-900'
             }`}
           >
             {totals.escalations}
           </div>
-          <div className="text-xs text-gray-400 mt-1">transferred to senior oversight</div>
+          <div className="text-[11px] font-medium text-slate-400 mt-1.5">transferred to senior oversight</div>
         </div>
       </div>
 
       {/* Demo Fast-Forward Control */}
-      <div className="bg-white border border-border rounded-lg p-4 shadow-sm">
+      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 md:p-8 shadow-sm stagger-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <FastForward size={16} className="text-primary" />
-              <h2 className="text-sm font-semibold text-[#0A1128]">Demo control</h2>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+              <FastForward size={16} strokeWidth={2} className="text-primary" />
+              <h2 className="text-sm font-semibold text-slate-900 tracking-tight">Demo control</h2>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                 Simulation
               </span>
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Advance calendar time to test statutory SLA breach thresholds and automated officer reassignments.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => handleFastForward(1)}
               disabled={fastForwarding}
-              className="px-2.5 py-1 text-xs border border-border rounded hover:bg-gray-50 disabled:opacity-50 transition-colors font-medium text-gray-700"
+              className="px-3 py-1.5 text-xs font-bold border border-slate-300 rounded-lg hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 active:scale-[0.97] transition-all duration-75 text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus:outline-none shadow-sm"
             >
               +1 day
             </button>
             <button
               onClick={() => handleFastForward(5)}
               disabled={fastForwarding}
-              className="px-2.5 py-1 text-xs border border-border rounded hover:bg-gray-50 disabled:opacity-50 transition-colors font-medium text-gray-700"
+              className="px-3 py-1.5 text-xs font-bold border border-slate-300 rounded-lg hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 active:scale-[0.97] transition-all duration-75 text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus:outline-none shadow-sm"
             >
               +5 days
             </button>
             <button
               onClick={() => handleFastForward(10)}
               disabled={fastForwarding}
-              className="px-3 py-1 text-xs bg-primary text-white rounded hover:bg-teal-800 disabled:opacity-50 transition-colors font-medium shadow-sm"
+              className="px-4 py-1.5 text-xs font-bold bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 active:scale-[0.97] transition-all duration-75 shadow-sm focus-visible:ring-2 focus-visible:ring-slate-900 focus:outline-none"
             >
               +10 days
             </button>
@@ -265,26 +265,26 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bar Chart: Average days per department */}
-      <div className="bg-white border border-border rounded-lg p-5 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+      <div className="bg-white border border-slate-200/75 rounded-2xl p-6 md:p-8 shadow-sm space-y-6 stagger-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="font-headings text-base text-[#0A1128]">Average turnaround by department</h2>
-            <p className="text-xs text-gray-500">
+            <h2 className="font-bold tracking-tight text-lg text-slate-900">Average turnaround by department</h2>
+            <p className="text-xs font-medium text-slate-500 mt-1">
               Horizontal bars show average resolution duration. Red indicates active SLA breaches.
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs text-gray-500">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-primary inline-block" /> Within SLA
+          <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
+            <span className="inline-flex items-center gap-2">
+              <span className="w-3 h-3 rounded bg-slate-900 shadow-sm inline-block" /> Within SLA
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block" /> SLA Breach
+            <span className="inline-flex items-center gap-2">
+              <span className="w-3 h-3 rounded bg-rose-500 shadow-sm inline-block" /> SLA Breach
             </span>
           </div>
         </div>
 
         {/* Visual Bar Chart */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-4 pt-2">
           {byDepartment.map((d) => {
             const hasBreach = d.breaches > 0;
             const percentage = Math.min(100, Math.round((d.avgDays / maxAvgDays) * 100));
@@ -304,15 +304,15 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="w-full h-5 bg-gray-100 rounded overflow-hidden flex items-center">
+                <div className="w-full h-6 bg-slate-100 rounded-lg overflow-hidden flex items-center shadow-inner">
                   <div
                     style={{ width: `${percentage}%` }}
-                    className={`h-full transition-all duration-500 flex items-center justify-end pr-2 ${
-                      hasBreach ? 'bg-red-500' : 'bg-primary'
+                    className={`h-full transition-all duration-500 flex items-center justify-end pr-3 ${
+                      hasBreach ? 'bg-rose-500' : 'bg-slate-900'
                     }`}
                   >
                     {percentage > 20 && (
-                      <span className="text-[10px] text-white font-mono font-bold">
+                      <span className="text-[11px] text-white font-mono font-bold">
                         {d.avgDays}d
                       </span>
                     )}
@@ -356,10 +356,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* Slowest approvals list */}
-      <div className="bg-white border border-border rounded-lg shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-headings text-base text-[#0A1128]">Slowest approvals</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+      <div className="bg-white shadow-xl border border-slate-200/50 rounded-2xl overflow-hidden stagger-5">
+        <div className="p-6 md:p-8 border-b border-slate-200/80 bg-slate-50/50">
+          <h2 className="font-bold tracking-tight text-lg text-slate-900">Slowest approvals</h2>
+          <p className="text-xs font-medium text-slate-500 mt-1">
             Active filings prioritized by statutory delay and escalation status.
           </p>
         </div>
@@ -425,17 +425,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* AI Insight Box */}
-      <div className="bg-white border border-teal-200 rounded-lg p-5 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-teal-100">
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded bg-teal-100 text-teal-800">
-              <Sparkles size={14} />
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl space-y-5 stagger-6 text-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <span className="p-2 rounded-lg bg-slate-800 text-teal-400">
+              <Sparkles size={16} strokeWidth={2.5} />
             </span>
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-teal-900">
+              <div className="text-xs font-bold uppercase tracking-widest text-slate-300">
                 AI suggestion. Admins decide.
               </div>
-              <div className="text-xs text-gray-500 mt-0.5">
+              <div className="text-xs font-medium text-slate-500 mt-1">
                 Algorithmic anomaly detection and regulatory optimization recommendations.
               </div>
             </div>
@@ -444,28 +444,28 @@ export default function AdminDashboard() {
           <button
             onClick={handleGenerateInsights}
             disabled={generatingInsights}
-            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded text-xs font-medium hover:bg-teal-800 disabled:opacity-50 transition-colors shadow-sm"
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-4 py-2 bg-teal-500 text-slate-950 rounded-lg text-xs font-bold hover:bg-teal-400 disabled:opacity-50 disabled:active:scale-100 transition-all duration-75 active:scale-[0.97] shadow-sm"
           >
-            <RefreshCw size={12} className={generatingInsights ? 'animate-spin' : ''} />
+            <RefreshCw size={14} strokeWidth={2.5} className={generatingInsights ? 'animate-spin' : ''} />
             {generatingInsights ? 'Analyzing…' : 'Generate insights'}
           </button>
         </div>
 
         {insights && insights.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {insights.map((item, idx) => (
-              <div key={idx} className="p-3 bg-teal-50/60 border border-teal-100 rounded-lg space-y-1.5">
-                <div className="text-xs font-semibold text-teal-950 flex items-center gap-1.5">
-                  <span className="text-teal-600 font-mono text-[11px] font-bold">0{idx + 1}.</span>
+              <div key={idx} className="p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl space-y-2">
+                <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span className="text-teal-400 font-mono text-[11px]">0{idx + 1}.</span>
                   {item.title}
                 </div>
-                <div className="text-xs text-gray-700 leading-relaxed">{item.action}</div>
+                <div className="text-xs font-medium text-slate-400 leading-relaxed">{item.action}</div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="py-4 text-center text-xs text-gray-400">
-            Click <strong>Generate insights</strong> to synthesize department bottlenecks, escalation risks, and joint inspection clustering recommendations.
+          <div className="py-6 text-center text-xs font-medium text-slate-500">
+            Click <strong className="text-slate-300">Generate insights</strong> to synthesize department bottlenecks, escalation risks, and joint inspection clustering recommendations.
           </div>
         )}
       </div>
