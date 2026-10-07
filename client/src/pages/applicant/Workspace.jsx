@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import useSharedTimer from '../../hooks/useSharedTimer';
 import {
   getApprovalAPI,
   getMessagesAPI,
@@ -7,6 +8,7 @@ import {
   checkDocumentAPI,
   submitApprovalAPI,
   getMyApplicationsAPI,
+  explainQueryAPI,
   DEMO_PROFILE_ADDRESS,
 } from '../../lib/api';
 import EmptyState from '../../components/EmptyState';
@@ -16,7 +18,7 @@ import RiskBadge from '../../components/RiskBadge';
 import RouteTrack from '../../components/RouteTrack';
 import {
   ArrowLeft, Clock, Upload, CheckCircle2, AlertTriangle,
-  Send, Sparkles, User as UserIcon, RefreshCw, Check, RotateCcw, Circle,
+  Send, Sparkles, User as UserIcon, RefreshCw, Check, RotateCcw, Circle, Copy,
 } from 'lucide-react';
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -175,13 +177,47 @@ export default function Workspace() {
   const [originalDocsState, setOriginalDocsState] = useState({});
 
   const [replyText, setReplyText] = useState('');
-  const [now, setNow] = useState(new Date());
+  const now = useSharedTimer();
   const [mobileTab, setMobileTab] = useState('documents');
   const [checkingDoc, setCheckingDoc] = useState(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [successBanner, setSuccessBanner] = useState('');
+
+  const [customExplanations, setCustomExplanations] = useState({});
+  const [explainingIds, setExplainingIds] = useState({});
+  const [viewModes, setViewModes] = useState({});
+  const [copiedHindiId, setCopiedHindiId] = useState(null);
+
+  const handleCopyHindi = (msgId, text) => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      setCopiedHindiId(msgId);
+      setTimeout(() => setCopiedHindiId(null), 2000);
+    }
+  };
+
+  const handleExplainQuery = async (msgId, text) => {
+    setExplainingIds((prev) => ({ ...prev, [msgId]: true }));
+    try {
+      const res = await explainQueryAPI(text);
+      if (res?.data?.ok && res.data.explanation) {
+        setCustomExplanations((prev) => ({ ...prev, [msgId]: res.data.explanation }));
+      }
+    } catch {
+      // ignore
+    } finally {
+      setExplainingIds((prev) => ({ ...prev, [msgId]: false }));
+    }
+  };
+
+  const toggleViewMode = (msgId) => {
+    setViewModes((prev) => ({
+      ...prev,
+      [msgId]: prev[msgId] === 'original' ? 'explanation' : 'original',
+    }));
+  };
 
   const messagesEndRef = useRef(null);
   const fileInputRefs = useRef({});
@@ -192,11 +228,6 @@ export default function Workspace() {
     return () => {
       Object.values(debounceTimersRef.current).forEach(clearTimeout);
     };
-  }, []);
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
@@ -379,6 +410,9 @@ export default function Workspace() {
     setSubmitSuccess(false);
     setSuccessBanner('');
   };
+
+  const isEditable = Boolean(approval && ['query_raised', 'not_started'].includes(approval.status));
+  const isLocked = !isEditable;
 
   // Derived validation computed on every render
   const computedDocs = {};
@@ -622,12 +656,18 @@ export default function Workspace() {
                     />
 
                     {!doc && !isChecking && (
-                      <button
-                        onClick={() => fileInputRefs.current[req.docType]?.click()}
-                        className="w-full py-2 border-2 border-dashed border-gray-300 rounded text-sm text-gray-500 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Upload size={16} /> Upload file
-                      </button>
+                      isEditable ? (
+                        <button
+                          onClick={() => fileInputRefs.current[req.docType]?.click()}
+                          className="w-full py-2 border-2 border-dashed border-gray-300 rounded text-sm text-gray-500 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Upload size={16} /> Upload file
+                        </button>
+                      ) : (
+                        <div className="py-2.5 px-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-500 italic text-center">
+                          Already submitted. Waiting for officer review.
+                        </div>
+                      )
                     )}
 
                     {!doc && isChecking && (
@@ -640,7 +680,7 @@ export default function Workspace() {
                       <div className="bg-gray-50 rounded p-3 text-sm space-y-3">
                         <div className="flex items-center justify-between text-gray-700">
                           <span className="truncate font-mono text-xs">{doc.fileName}</span>
-                          {!submitSuccess && (
+                          {isEditable && (
                             <button
                               onClick={() => {
                                 if (debounceTimersRef.current[req.docType]) {
@@ -679,7 +719,7 @@ export default function Workspace() {
                             <span className="text-xs text-teal-700 bg-teal-50 px-2 py-1 rounded inline-block">
                               Auto-filled from your profile
                             </span>
-                            {!submitSuccess && (
+                            {isEditable && (
                               <button
                                 type="button"
                                 onClick={() => handleRecheck(req.docType)}
@@ -698,7 +738,7 @@ export default function Workspace() {
                           {Object.entries(doc.declaredFields || {}).map(([key, val]) => (
                             <div key={key}>
                               <label className="block text-xs text-gray-500 capitalize mb-1">{key}</label>
-                              {submitSuccess ? (
+                              {isLocked ? (
                                 <div className="w-full border border-border rounded px-2 py-1 text-sm bg-gray-100 text-gray-600 select-none">
                                   {val}
                                 </div>
@@ -713,7 +753,13 @@ export default function Workspace() {
                             </div>
                           ))}
 
-                          {isUnchecked && (
+                          {isLocked && (
+                            <div className="text-xs text-gray-500 italic pt-1">
+                              Already submitted. Waiting for officer review.
+                            </div>
+                          )}
+
+                          {isUnchecked && isEditable && (
                             <div className="text-xs text-teal-800 bg-teal-50 border border-teal-200/80 rounded px-2.5 py-1.5 flex items-center gap-1.5 font-medium">
                               <span>You changed the details. Click Re-check to validate.</span>
                             </div>
@@ -767,13 +813,18 @@ export default function Workspace() {
                 })}
               </div>
 
-              {submitSuccess ? (
-                <button
-                  disabled
-                  className="w-full py-2.5 bg-green-600 text-white rounded font-medium disabled:opacity-80 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <Check size={18} /> Submitted
-                </button>
+              {isLocked ? (
+                <div className="space-y-2">
+                  <button
+                    disabled
+                    className="w-full py-2.5 bg-green-600 text-white rounded font-medium disabled:opacity-80 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Check size={18} /> {approval?.status === 'approved' ? 'Approved' : 'Submitted'}
+                  </button>
+                  <p className="text-xs text-gray-500 text-center italic">
+                    Already submitted. Waiting for officer review.
+                  </p>
+                </div>
               ) : (
                 <button
                   onClick={handleSubmit}
@@ -785,7 +836,7 @@ export default function Workspace() {
                   ) : 'Submit for review'}
                 </button>
               )}
-              {!canSubmit && !submitSuccess && submitReason && (
+              {isEditable && !canSubmit && submitReason && (
                 <p className="text-sm text-gray-700 font-medium text-center">{submitReason}</p>
               )}
             </div>
@@ -799,7 +850,7 @@ export default function Workspace() {
               mobileTab === 'thread' || mobileTab === 'documents' ? 'block' : 'hidden md:block'
             }`}
           >
-            <div className="p-4 border-b border-border shrink-0">
+            <div id="workspace-thread" className="p-4 border-b border-border shrink-0">
               <h2 className="font-headings text-lg text-[#0A1128]">Thread</h2>
             </div>
 
@@ -809,6 +860,9 @@ export default function Workspace() {
               ) : (
                 uniqueMessages.map((m) => {
                   const isYou = m.senderRole === 'applicant';
+                  const effectiveExplanation = m.aiExplanation || customExplanations[m.id];
+                  const isShowingExplanation = viewModes[m.id] !== 'original';
+
                   return (
                     <div key={m.id} className={`flex flex-col ${isYou ? 'items-end' : 'items-start'}`}>
                       <div className="flex items-center gap-2 mb-1">
@@ -821,31 +875,71 @@ export default function Workspace() {
                         {m.text}
                       </div>
 
-                      {m.aiExplanation && (
+                      {/* Explain this button for officer messages without explanation */}
+                      {!effectiveExplanation && m.senderRole === 'officer' && (
+                        <button
+                          onClick={() => handleExplainQuery(m.id, m.text)}
+                          disabled={explainingIds[m.id]}
+                          className="mt-1 flex items-center gap-1 text-xs text-primary hover:text-teal-800 font-medium transition-colors"
+                        >
+                          <Sparkles size={12} /> {explainingIds[m.id] ? 'Explaining...' : 'Explain this'}
+                        </button>
+                      )}
+
+                      {/* Explanation Card */}
+                      {effectiveExplanation && (
                         <div className="mt-2 p-3 bg-teal-50 border border-teal-100 rounded-lg max-w-full text-sm">
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between gap-2 mb-2">
                             <div className="flex items-center gap-1.5 text-xs text-teal-800 font-bold uppercase tracking-wider">
-                              <Sparkles size={14} /> Explained by AI
+                              <Sparkles size={14} className="shrink-0" />
+                              <span>Explained by AI. The officer decides.</span>
                             </div>
-                            <span className="text-[9px] text-teal-600 font-medium bg-teal-100 px-1 rounded uppercase tracking-widest">
-                              The officer decides
-                            </span>
+                            <button
+                              onClick={() => toggleViewMode(m.id)}
+                              className="text-[11px] text-teal-700 hover:text-teal-900 underline font-medium shrink-0"
+                            >
+                              {isShowingExplanation ? 'Show original' : 'Show explanation'}
+                            </button>
                           </div>
-                          <div className="space-y-3 text-gray-700">
-                            <div>
-                              <strong className="block text-xs text-teal-900 mb-0.5">What this means</strong>
-                              <p className="text-xs leading-relaxed">{m.aiExplanation.explanation}</p>
+
+                          {isShowingExplanation ? (
+                            <div className="space-y-3 text-gray-700">
+                              <div>
+                                <strong className="block text-xs text-teal-900 mb-0.5">What this means</strong>
+                                <p className="text-xs leading-relaxed">{effectiveExplanation.explanation}</p>
+                              </div>
+                              <div>
+                                <strong className="block text-xs text-teal-900 mb-0.5">What to do</strong>
+                                <ol className="list-decimal pl-4 text-xs space-y-1">
+                                  {effectiveExplanation.steps.map((step, idx) => (
+                                    <li key={idx}>{step}</li>
+                                  ))}
+                                </ol>
+                              </div>
+                              <div className="pt-2 border-t border-teal-200/50 flex items-center justify-between gap-2">
+                                <p className="text-xs text-gray-600 italic">"{effectiveExplanation.hindi}"</p>
+                                <button
+                                  onClick={() => handleCopyHindi(m.id, effectiveExplanation.hindi)}
+                                  className="text-teal-700 hover:text-teal-900 p-1 rounded hover:bg-teal-100/60 transition-colors shrink-0"
+                                  title="Copy Hindi line"
+                                  aria-label="Copy Hindi explanation"
+                                >
+                                  {copiedHindiId === m.id ? (
+                                    <Check size={14} className="text-green-600" />
+                                  ) : (
+                                    <Copy size={14} />
+                                  )}
+                                </button>
+                              </div>
                             </div>
-                            <div>
-                              <strong className="block text-xs text-teal-900 mb-0.5">What to do</strong>
-                              <ol className="list-decimal pl-4 text-xs space-y-1">
-                                {m.aiExplanation.steps.map((step, idx) => <li key={idx}>{step}</li>)}
-                              </ol>
+                          ) : (
+                            <div className="text-xs text-gray-700 bg-white p-2.5 rounded border border-teal-100">
+                              <span className="text-[10px] text-gray-400 font-mono block mb-1">
+                                ORIGINAL OFFICER NOTE:
+                              </span>
+                              <p className="leading-relaxed">{m.text}</p>
                             </div>
-                            <div className="pt-2 border-t border-teal-200/50">
-                              <p className="text-xs text-gray-600 italic">"{m.aiExplanation.hindi}"</p>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       )}
                     </div>

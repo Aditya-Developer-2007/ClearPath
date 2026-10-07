@@ -329,26 +329,28 @@ export default function AdminDashboard() {
             <summary className="cursor-pointer font-medium hover:text-text">
               View data table summary (accessible)
             </summary>
-            <table className="w-full mt-2 text-left text-xs border border-border rounded">
-              <thead className="bg-gray-50 text-gray-700">
-                <tr>
-                  <th className="p-2 border-b">Department</th>
-                  <th className="p-2 border-b">Average Days</th>
-                  <th className="p-2 border-b">Open Approvals</th>
-                  <th className="p-2 border-b">SLA Breaches</th>
-                </tr>
-              </thead>
-              <tbody>
-                {byDepartment.map((d) => (
-                  <tr key={d.dept} className="border-b last:border-b-0">
-                    <td className="p-2 font-medium">{d.dept}</td>
-                    <td className="p-2 font-mono">{d.avgDays} days</td>
-                    <td className="p-2 font-mono">{d.pending}</td>
-                    <td className="p-2 font-mono text-status-rejected">{d.breaches}</td>
+            <div className="overflow-x-auto mt-2">
+              <table className="w-full text-left text-xs border border-border rounded min-w-[480px]">
+                <thead className="bg-gray-50 text-gray-700">
+                  <tr>
+                    <th className="p-2 border-b">Department</th>
+                    <th className="p-2 border-b">Average Days</th>
+                    <th className="p-2 border-b">Open Approvals</th>
+                    <th className="p-2 border-b">SLA Breaches</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {byDepartment.map((d) => (
+                    <tr key={d.dept} className="border-b last:border-b-0">
+                      <td className="p-2 font-medium">{d.dept}</td>
+                      <td className="p-2 font-mono">{d.avgDays} days</td>
+                      <td className="p-2 font-mono">{d.pending}</td>
+                      <td className="p-2 font-mono text-status-rejected">{d.breaches}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </details>
         </div>
       </div>

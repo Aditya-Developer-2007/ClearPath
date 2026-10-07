@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getOfficerQueueAPI, resetMockDataAPI } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
+import useSharedTimer from '../../hooks/useSharedTimer';
 import EmptyState from '../../components/EmptyState';
 import SkeletonCard from '../../components/SkeletonCard';
 import StatusBadge from '../../components/StatusBadge';
@@ -55,7 +56,7 @@ export default function OfficerQueue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
-  const [now, setNow] = useState(() => Date.now());
+  const now = useSharedTimer();
 
   const load = useCallback(() => {
     setLoading(true);
@@ -74,11 +75,6 @@ export default function OfficerQueue() {
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 60000);
-    return () => clearInterval(t);
-  }, []);
 
   // ── Derived stats ──────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -115,7 +111,14 @@ export default function OfficerQueue() {
     } else if (activeFilter === 'Needs review') {
       subset = subset.filter((r) => r.warningsCount > 0 && !['approved', 'rejected'].includes(r.status));
     }
-    return subset.sort((a, b) => urgencyScore(b) - urgencyScore(a));
+    return subset.sort((a, b) => {
+      const scoreDiff = urgencyScore(b) - urgencyScore(a);
+      if (scoreDiff !== 0) return scoreDiff;
+      const timeA = new Date(a.slaDeadline).getTime();
+      const timeB = new Date(b.slaDeadline).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return String(a.id).localeCompare(String(b.id));
+    });
   }, [rows, activeFilter]);
 
   const handleReset = () => {

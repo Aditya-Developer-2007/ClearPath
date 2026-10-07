@@ -25,7 +25,7 @@ export default function Wizard() {
     city: routerState?.prefill?.city || null,
     investment: routerState?.prefill?.investmentLakh || null,
     employees: routerState?.prefill?.employees || null,
-    hazardous: routerState?.prefill?.hazardous || null,
+    hazardous: routerState?.prefill?.hazardous !== undefined ? routerState.prefill.hazardous : null,
     stage: routerState?.prefill?.stage || null,
   };
 

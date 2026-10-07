@@ -57,6 +57,23 @@ export default function Landing() {
                 value={text}
                 onChange={e => setText(e.target.value)}
               />
+              <div className="flex flex-wrap gap-2 mb-4 items-center">
+                <span className="text-xs text-gray-500 font-medium">Try:</span>
+                {[
+                  "Textile unit in Surat, 30 lakh, 12 workers",
+                  "Mujhe Ahmedabad mein food processing unit kholna hai, 50 lakh",
+                  "Chemical plant in Vadodara, hazardous, 2 crore",
+                ].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setText(chip)}
+                    className="text-xs bg-[#F7F5F0] hover:bg-gray-200 text-[#0A1128] border border-border px-2.5 py-1 rounded transition-colors text-left font-normal"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
               <button 
                 onClick={handleSubmit} 
                 disabled={loading}
