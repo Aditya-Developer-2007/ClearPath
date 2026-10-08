@@ -283,6 +283,68 @@ export default function Workspace() {
     return `${Math.floor(h / 24)}d ago`;
   };
 
+  // ── Timeline pipeline nodes ────────────────────────────────────────────────
+  const buildTimelineNodes = (status, activityLog) => {
+    // Order of pipeline stages
+    const STAGES = [
+      { key: 'draft',     label: 'Application Created',        sub: 'Draft saved & ready' },
+      { key: 'submitted', label: 'Submitted for Review',        sub: 'Awaiting officer assignment' },
+      { key: 'in_review', label: 'Under Officer Review',        sub: 'Officer is reviewing documents' },
+      { key: 'query',     label: 'Action Required',             sub: 'Officer raised a query' },
+      { key: 'terminal',  label: 'Decision',                    sub: '' },
+    ];
+
+    // Map current status to an index
+    const stageIndex = (() => {
+      if (['approved', 'rejected', 'escalated'].includes(status)) return 4;
+      if (['query_raised', 'needs_fix'].includes(status)) return 3;
+      if (['in_review', 'under_review'].includes(status)) return 2;
+      if (status === 'submitted') return 1;
+      return 0; // draft / not_started
+    })();
+
+    // Terminal label depends on actual status
+    const terminalLabel =
+      status === 'approved' ? 'Approved ✓' :
+      status === 'rejected' ? 'Rejected' :
+      status === 'escalated' ? 'Escalated' :
+      'Pending Decision';
+    const terminalSub =
+      status === 'approved' ? 'All documents verified' :
+      status === 'rejected' ? 'Application declined' :
+      status === 'escalated' ? 'Forwarded to senior officer' :
+      'Awaiting final decision';
+
+    // Find timestamp for each stage from activityLog
+    const findTs = (keywords) => {
+      const log = (activityLog || []).find((l) =>
+        keywords.some((kw) => l.action?.toLowerCase().includes(kw))
+      );
+      return log?.timestamp || null;
+    };
+
+    return STAGES.map((stage, idx) => {
+      const isPast   = idx < stageIndex;
+      const isActive = idx === stageIndex;
+      const isPending = idx > stageIndex;
+      const isQuery  = stage.key === 'query' && ['query_raised', 'needs_fix'].includes(status);
+      const isTerminal = stage.key === 'terminal';
+
+      let ts = null;
+      if (stage.key === 'draft')     ts = findTs(['created', 'draft']);
+      if (stage.key === 'submitted') ts = findTs(['submitted', 'submit']);
+      if (stage.key === 'in_review') ts = findTs(['review', 'assigned', 'officer']);
+      if (stage.key === 'query')     ts = findTs(['query', 'raised', 'fix']);
+      if (stage.key === 'terminal')  ts = findTs(['approved', 'rejected', 'escalated']);
+
+      const label      = isTerminal ? terminalLabel : stage.label;
+      const sub        = isTerminal ? terminalSub   : stage.sub;
+      const timeLabel  = ts ? getRelativeTime(ts) : (isActive ? 'In progress' : isPending ? 'Pending' : '');
+
+      return { key: stage.key, label, sub, isPast, isActive, isPending, isQuery, ts, timeLabel };
+    });
+  };
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
@@ -657,22 +719,71 @@ export default function Workspace() {
             </div>
           </div>
 
-          <div className={`bg-white border border-border rounded shadow-sm p-4 ${
+          {/* ── Premium Timeline Card ── */}
+          <div className={`bg-white border border-slate-200/75 shadow-sm rounded-xl p-6 ${
             mobileTab === 'timeline' || mobileTab === 'documents' ? 'block' : 'hidden md:block'
           }`}>
-            <h2 className="font-headings text-lg text-[#0A1128] mb-4">Timeline</h2>
-            <div className="space-y-4 border-l-2 border-gray-100 ml-2 pl-4">
-              {approval.activityLog.map((log, i) => (
-                <div key={i} className="relative flex flex-col gap-1">
-                  <div className="absolute w-3 h-3 bg-gray-200 rounded-full -left-[1.35rem] top-1.5 border-2 border-white" />
-                  <div className="flex justify-between items-start">
-                    <span className="font-medium text-sm text-[#0A1128]">{log.action}</span>
-                    <span className="text-[10px] text-gray-400 font-mono">{getRelativeTime(log.timestamp)}</span>
+            <p className="text-xs font-bold text-slate-400 tracking-widest uppercase mb-6">Application Pipeline</p>
+
+            <div className="border-l-2 border-slate-100 ml-2.5 space-y-0">
+              {buildTimelineNodes(approval.status, approval.activityLog).map((node, idx, arr) => {
+                const dotClass = node.isQuery
+                  ? 'bg-amber-500 ring-4 ring-amber-100 animate-pulse shadow-md'
+                  : node.isActive
+                    ? 'bg-slate-900 ring-4 ring-slate-100 shadow-md'
+                    : node.isPast
+                      ? 'bg-emerald-500 ring-4 ring-white'
+                      : 'bg-slate-300 ring-4 ring-white';
+
+                const labelClass = node.isActive
+                  ? 'text-slate-900 font-semibold text-sm'
+                  : node.isPast
+                    ? 'text-slate-600 font-medium text-sm'
+                    : 'text-slate-400 font-medium text-sm';
+
+                const subClass = node.isActive
+                  ? 'text-slate-600'
+                  : node.isPast
+                    ? 'text-slate-400'
+                    : 'text-slate-300';
+
+                return (
+                  <div
+                    key={node.key}
+                    className={`group relative flex gap-4 pb-6 last:pb-0`}
+                  >
+                    {/* Dot */}
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={`w-3 h-3 rounded-full shrink-0 -ml-[7px] mt-0.5 transition-transform duration-200 group-hover:translate-x-[2px] ${dotClass}`}
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 -mt-0.5 group-hover:translate-x-0.5 transition-transform duration-200">
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <span className={`${labelClass} leading-tight`}>{node.label}</span>
+                        {node.timeLabel && (
+                          <span className="font-mono text-[10px] text-slate-400 shrink-0 whitespace-nowrap">
+                            {node.timeLabel}
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-xs mt-0.5 leading-snug ${subClass}`}>{node.sub}</p>
+                      {node.isQuery && (
+                        <span className="inline-flex items-center mt-1.5 gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                          ● Action required
+                        </span>
+                      )}
+                      {node.key === 'terminal' && node.isActive && ['approved'].includes(approval.status) && (
+                        <span className="inline-flex items-center mt-1.5 gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          ✓ Complete
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xs text-gray-500">By {log.by}</span>
-                  {log.note && <div className="mt-1 text-xs text-gray-700 bg-gray-50 p-2 rounded">{log.note}</div>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
