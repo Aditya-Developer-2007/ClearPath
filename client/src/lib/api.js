@@ -5,6 +5,8 @@ import {
   generateApprovalsForBusiness,
   KNOWLEDGE_BASE,
   STATUTORY_CATALOG,
+  SCHEMES_CATALOG,
+  evaluateEligibleSchemes,
 } from './statutoryEngine.js';
 import { myApplicationsCache } from '../mocks/applicantStore.js';
 import {
@@ -30,6 +32,8 @@ export {
   generateApprovalsForBusiness,
   KNOWLEDGE_BASE,
   STATUTORY_CATALOG,
+  SCHEMES_CATALOG,
+  evaluateEligibleSchemes,
 };
 
 export const users = [
@@ -221,11 +225,13 @@ export const submitApplicationAPI = async (data) => {
     return new Promise((resolve) => {
       setTimeout(() => {
         const approvals = evaluateStatutoryApprovals(data);
+        const schemes = evaluateEligibleSchemes(data);
         const estimatedDays = approvals.reduce((max, a) => Math.max(max, a.slaDays || 0), 0) || 30;
         resolve({
           data: {
             application: { id: 'APP-' + Math.floor(Math.random() * 10000) },
             approvals,
+            schemes,
             estimatedDays,
           },
         });
@@ -240,7 +246,8 @@ export const getMyApplicationsAPI = async () => {
   if (USE_MOCK) {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve({ data: myApplicationsCache });
+        const schemes = evaluateEligibleSchemes(myApplicationsCache.applications[0] || {});
+        resolve({ data: { ...myApplicationsCache, schemes } });
       }, 800);
     });
   }
@@ -752,7 +759,9 @@ export const askAssistantAPI = async (question) => {
           const isTimeQuestion = /(how long|how much time|days|sla|time|kitne din|kitna samay|kab tak|duration|din)/i.test(normalized);
 
           let answer = '';
-          if (matchedEntry.sourceRef === 'ADM-08') {
+          if (matchedEntry.sourceRef === 'GOV-14') {
+            answer = 'Eligible government support schemes include PMEGP (up to 35% capital subsidy for projects <= ₹50 Lakh), CGTMSE (collateral-free credit guarantee up to ₹5 Crore), State Interest Subsidy (5-7% for 5 years), and ZED green compliance grants. Apply via KVIC e-Portal, SIDBI, or State Directorate under Credit Linked Capital Subsidy Scheme & State Industrial Policy.';
+          } else if (matchedEntry.sourceRef === 'ADM-08') {
             answer = 'Inspections for Fire Safety and Pollution Clearance can be combined into a single joint visit. This reduces separate visits and coordinates site verification across departments under the Unified Central Inspection Scheme.';
           } else if (isDocQuestion) {
             answer = `For ${matchedEntry.name} (${matchedEntry.department}), required documents under ${matchedEntry.statutoryBasis || 'statutory rules'} are: ${matchedEntry.docs.join(', ')}. Ensure declared details match your profile.`;

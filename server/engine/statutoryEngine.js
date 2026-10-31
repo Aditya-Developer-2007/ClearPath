@@ -1,4 +1,4 @@
-// ── ClearPath Indian Statutory Rule Engine (Backend Mirror) ─────────────────
+// ── ClearPath Indian Statutory Rule Engine (Single Source of Truth) ─────────
 // Grounded in Indian Federal & State Regulatory Acts:
 // - MSMED Act 2006, CGST Act 2017 & State PT Acts
 // - State Fire Prevention & Life Safety Measures Acts
@@ -9,6 +9,7 @@
 // - Food Safety & Standards Act, 2006 (Section 31)
 // - Hazardous & Other Wastes (M&TM) Rules, 2016
 // - Indian Boilers Act, 1923
+// - PMEGP, CGTMSE & State Industrial Policy Subsidies
 
 export function getStatePortalBadge(state) {
   const s = (state || '').toLowerCase();
@@ -121,7 +122,7 @@ export const STATUTORY_CATALOG = [
     requirementType: 'BASE',
     statutoryBasis: 'CGST Act, 2017 Sec 22 & State Tax on Professions Act',
     docs: ['Business PAN Card', 'Proof of Principal Place of Business', 'Cancelled Cheque'],
-    keywords: ['professional tax', 'pt', 'gst', 'finance', 'fin-07', 'tax'],
+    keywords: ['professional tax', 'pt', 'gst registration', 'gst certificate', 'gst portal', 'finance', 'fin-07'],
     matches: () => true,
   },
   {
@@ -296,6 +297,68 @@ export const STATUTORY_CATALOG = [
   },
 ];
 
+// ── Government Support & Subsidy Schemes Catalog ───────────────────────────
+export const SCHEMES_CATALOG = [
+  {
+    code: 'SCH-01',
+    name: 'PMEGP Capital Subsidy (Margin Money Scheme)',
+    agency: 'Ministry of MSME (KVIC)',
+    benefit: '15% to 35% Capital Subsidy on Project Cost',
+    eligibilityBasis: 'Eligible: Manufacturing unit with project investment <= ₹50 Lakh under PMEGP norms',
+    portal: 'KVIC PMEGP e-Portal',
+    matches: (ctx) => Number(ctx.investmentLakh) <= 50,
+  },
+  {
+    code: 'SCH-02',
+    name: 'CGTMSE Collateral-Free Credit Guarantee',
+    agency: 'SIDBI & Ministry of MSME',
+    benefit: 'Up to 85% Credit Guarantee Cover (No Collateral up to ₹5 Cr)',
+    eligibilityBasis: 'Eligible: MSME credit facility <= ₹5 Crore under CGTMSE Trust rules',
+    portal: 'CGTMSE Member Lending Portal',
+    matches: (ctx) => Number(ctx.investmentLakh) <= 500,
+  },
+  {
+    code: 'SCH-03',
+    name: 'State Industrial Policy Interest & Power Subsidy',
+    getAgency: (ctx) => (ctx.state === 'Gujarat' ? 'Industries & Mines Dept, Gujarat' : 'State Directorate of Industries'),
+    benefit: '5% to 7% Interest Subsidy for 5 Years + Electricity Duty Exemption',
+    eligibilityBasis: 'Eligible: New/Expanding MSME industrial unit under State Industrial Policy',
+    getPortal: (ctx) => getStatePortalBadge(ctx.state).replace('Routed via ', ''),
+    matches: (ctx) => Number(ctx.investmentLakh) <= 5000,
+  },
+  {
+    code: 'SCH-04',
+    name: 'ZED / Green Env Compliance Subsidy (Pollution Control)',
+    agency: 'Ministry of MSME & SPCB',
+    benefit: 'Up to 50% Financial Assistance on ETP / Air Pollution Control Equipment',
+    eligibilityBasis: 'Eligible: Orange/Red category unit installing mandatory pollution control systems',
+    portal: 'MSME ZED / State PCB Portal',
+    matches: (ctx) => ctx.hazardous === true || ['textile', 'chemical', 'food'].includes(ctx.sector),
+  },
+];
+
+export function evaluateEligibleSchemes(rawInput = {}) {
+  const ctx = normalizeBusinessInput(rawInput);
+  const matched = [];
+
+  for (const entry of SCHEMES_CATALOG) {
+    if (!entry.matches(ctx)) continue;
+
+    matched.push({
+      id: entry.code,
+      code: entry.code,
+      name: entry.name,
+      agency: typeof entry.getAgency === 'function' ? entry.getAgency(ctx) : entry.agency,
+      benefit: entry.benefit,
+      eligibilityBasis: entry.eligibilityBasis,
+      portal: typeof entry.getPortal === 'function' ? entry.getPortal(ctx) : entry.portal,
+    });
+  }
+
+  return matched;
+}
+
+// Mapping for canonical demo IDs (req1..req7) used in the Alice applicant profile
 const DEMO_CODE_TO_REQ_ID = {
   'IND-03': 'req1',
   'FD-01': 'req2',
@@ -349,6 +412,7 @@ export function evaluateStatutoryApprovals(rawInput = {}, options = {}) {
     });
   }
 
+  results.schemes = evaluateEligibleSchemes(rawInput);
   return results;
 }
 
@@ -394,5 +458,13 @@ export const KNOWLEDGE_BASE = [
     keywords: ['combined', 'inspection', 'inspections', 'joint', 'combine', 'together', 'saath', 'visit', 'adm-08'],
     statutoryBasis: 'Ease of Doing Business Mandate — Unified Central Inspection Scheme',
   },
+  {
+    sourceRef: 'GOV-14',
+    name: 'Government Support & Subsidy Schemes (PMEGP, CGTMSE, State Subsidy)',
+    department: 'MSME',
+    slaDays: 15,
+    docs: ['Udyam Registration Certificate', 'Detailed Project Report (DPR)', 'Bank Sanction Letter', 'Machinery Invoices'],
+    keywords: ['subsidy', 'subsidies', 'scheme', 'schemes', 'loan', 'grant', 'grants', 'support', 'pmegp', 'cgtmse', 'chhut', 'yojana', 'interest subsidy', 'gov-14'],
+    statutoryBasis: 'Credit Linked Capital Subsidy Scheme & State Industrial Policy',
+  },
 ];
-

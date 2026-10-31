@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useBusiness } from '../../context/BusinessContext';
-import { deriveApprovalMetadata, getStatePortalBadge } from '../../lib/api';
+import { deriveApprovalMetadata, getStatePortalBadge, evaluateEligibleSchemes } from '../../lib/api';
 import RiskBadge from '../../components/RiskBadge';
 import EmptyState from '../../components/EmptyState';
 import AssistantDrawer from '../../components/AssistantDrawer';
@@ -57,6 +57,7 @@ export default function ChecklistResult() {
   const result = state?.result;
 
   const approvals = result?.approvals || [];
+  const schemes = result?.schemes || evaluateEligibleSchemes(state?.newBusiness || {});
   const estimatedDays = result?.estimatedDays || 0;
   const animatedApprovals = useCountUp(approvals.length, 700);
   const animatedDays = useCountUp(estimatedDays, 700);
@@ -191,6 +192,61 @@ export default function ChecklistResult() {
               ));
           })()}
         </div>
+
+        {/* Eligible Government Support & Subsidies Section */}
+        {schemes.length > 0 && (
+          <div className="mt-12 mb-8 stagger-7">
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                Eligible Government Support &amp; Subsidies
+              </h2>
+              <span className="px-2 py-0.5 text-xs font-mono font-bold bg-teal-50 text-teal-800 border border-teal-200 rounded-md">
+                {schemes.length} Available
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mb-6 font-medium">
+              Matched deterministically from your unit parameters. Rules decide eligibility.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {schemes.map((sch) => (
+                <div
+                  key={sch.code}
+                  className="bg-white border border-slate-200/80 rounded-xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                      <span className="font-mono text-xs font-bold text-teal-900 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-md">
+                        {sch.code}
+                      </span>
+                      <span className="font-mono text-[11px] font-medium text-slate-500 truncate max-w-[200px]">
+                        {sch.agency}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-base text-slate-900 mb-2 leading-snug tracking-tight">
+                      {sch.name}
+                    </h3>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 text-white text-xs font-medium mb-3">
+                      <span className="text-teal-300 font-bold">Benefit:</span>
+                      <span>{sch.benefit}</span>
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-slate-100 flex flex-col gap-1.5 text-[11px]">
+                    <div className="text-slate-600 flex items-start gap-1.5">
+                      <span className="font-bold text-slate-900 shrink-0 text-[10px] uppercase tracking-wider">Mandate:</span>
+                      <span className="text-slate-600 leading-tight">{sch.eligibilityBasis}</span>
+                    </div>
+                    {sch.portal && (
+                      <div className="text-slate-400 font-mono text-[10px] mt-0.5">
+                        Portal: {sch.portal}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {inspectionCount >= 2 && (
           <div className="bg-blue-50 border border-blue-200/80 text-blue-900 rounded-xl p-4 mb-8 text-sm flex gap-3 stagger-7 shadow-sm">

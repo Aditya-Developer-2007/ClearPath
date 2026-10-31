@@ -126,7 +126,9 @@ export const askAssistant = async (question) => {
     const isTimeQuestion = /(how long|how much time|days|sla|time|kitne din|kitna samay|kab tak|duration|din)/i.test(normalized);
 
     let answer = '';
-    if (matchedEntry.sourceRef === 'ADM-08') {
+    if (matchedEntry.sourceRef === 'GOV-14') {
+      answer = 'Eligible government support schemes include PMEGP (up to 35% capital subsidy for projects <= ₹50 Lakh), CGTMSE (collateral-free credit guarantee up to ₹5 Crore), State Interest Subsidy (5-7% for 5 years), and ZED green compliance grants. Apply via KVIC e-Portal, SIDBI, or State Directorate under Credit Linked Capital Subsidy Scheme & State Industrial Policy.';
+    } else if (matchedEntry.sourceRef === 'ADM-08') {
       answer = 'Inspections for Fire Safety and Pollution Clearance can be combined into a single joint visit. This reduces separate visits and coordinates site verification across departments under the Unified Central Inspection Scheme.';
     } else if (isDocQuestion) {
       answer = `For ${matchedEntry.name} (${matchedEntry.department}), required documents under ${matchedEntry.statutoryBasis || 'statutory rules'} are: ${matchedEntry.docs.join(', ')}. Ensure declared details match your profile.`;

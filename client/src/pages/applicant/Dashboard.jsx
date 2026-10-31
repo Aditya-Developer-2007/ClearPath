@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { getMyApplicationsAPI, deriveApprovalMetadata, getStatePortalBadge, generateApprovalsForBusiness } from '../../lib/api';
+import { getMyApplicationsAPI, deriveApprovalMetadata, getStatePortalBadge, generateApprovalsForBusiness, evaluateEligibleSchemes } from '../../lib/api';
 import useSharedTimer from '../../hooks/useSharedTimer';
 import { useBusiness } from '../../context/BusinessContext';
 import EmptyState from '../../components/EmptyState';
@@ -37,6 +37,12 @@ export default function ApplicantDashboard() {
   
   const navigate = useNavigate();
   const { setAlerts } = useOutletContext() || {};
+  const [schemesExpanded, setSchemesExpanded] = useState(true);
+
+  const schemes = useMemo(() => {
+    const unit = activeBusiness || data || { sector: 'Textile', city: 'Surat', investmentLakh: 30, employees: 12 };
+    return evaluateEligibleSchemes(unit);
+  }, [activeBusiness, data]);
 
   useEffect(() => {
     if (!switcherOpen) return;
@@ -546,6 +552,74 @@ export default function ApplicantDashboard() {
               </div>
             ));
         })()}
+
+        {/* Matched Government Support & Subsidies */}
+        {schemes.length > 0 && (
+          <div className="mt-12 bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-base text-slate-900 tracking-tight">
+                    Eligible Government Support &amp; Subsidies
+                  </h3>
+                  <span className="px-2 py-0.5 text-xs font-mono font-bold bg-teal-50 text-teal-800 border border-teal-200 rounded-md">
+                    {schemes.length} Matched
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Deterministic statutory benefits matched for {activeBusiness?.name || 'your unit'}.
+                </p>
+              </div>
+              <button
+                onClick={() => setSchemesExpanded(!schemesExpanded)}
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all duration-75 shrink-0 flex items-center gap-1.5"
+              >
+                {schemesExpanded ? 'Collapse' : 'View Schemes'}
+                <ChevronDown size={14} className={`transform transition-transform duration-200 ${schemesExpanded ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {schemesExpanded && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+                {schemes.map((sch) => (
+                  <div
+                    key={sch.code}
+                    className="bg-slate-50/80 border border-slate-200/70 rounded-lg p-4 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                        <span className="font-mono text-xs font-bold text-teal-900 bg-teal-100/60 border border-teal-200 px-2 py-0.5 rounded">
+                          {sch.code}
+                        </span>
+                        <span className="font-mono text-[11px] text-slate-500 truncate max-w-[200px]">
+                          {sch.agency}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-sm text-slate-900 mb-2 tracking-tight">
+                        {sch.name}
+                      </h4>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 text-white text-[11px] font-medium mb-3">
+                        <span className="text-teal-300 font-bold">Benefit:</span>
+                        <span>{sch.benefit}</span>
+                      </div>
+                    </div>
+                    <div className="pt-2.5 border-t border-slate-200/60 text-[11px] text-slate-600 flex flex-col gap-1">
+                      <div>
+                        <span className="font-bold text-slate-900 text-[10px] uppercase tracking-wider mr-1.5">Mandate:</span>
+                        <span>{sch.eligibilityBasis}</span>
+                      </div>
+                      {sch.portal && (
+                        <div className="text-slate-400 font-mono text-[10px]">
+                          Portal: {sch.portal}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
