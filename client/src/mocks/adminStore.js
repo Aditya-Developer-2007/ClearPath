@@ -176,7 +176,7 @@ export function fastForward(days) {
             req.assignedOfficerName = queueRow.assignedOfficerName;
           }
         } else if (!['approved', 'rejected'].includes(req.status)) {
-          const oldMs = new Date(req.slaDeadline).getTime();
+          const oldMs = req.slaDeadline ? new Date(req.slaDeadline).getTime() : (Date.now() + (req.slaDays || 21) * 86400000);
           const newDeadline = new Date(oldMs - days * 86400000).toISOString();
           req.slaDeadline = newDeadline;
           shiftedCount++;

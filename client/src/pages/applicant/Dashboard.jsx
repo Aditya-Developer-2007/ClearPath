@@ -7,7 +7,7 @@ import EmptyState from '../../components/EmptyState';
 import SkeletonCard from '../../components/SkeletonCard';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
-import { ShieldAlert, Info, Play, Eye, MessageSquareReply, CornerDownRight, CheckCircle2, Building2, ChevronDown, Plus, FileText, Clock, AlertTriangle, ShieldCheck, Activity, Check, Circle, AlertCircle, FileCheck2, UserRound } from 'lucide-react';
+import { ShieldAlert, Info, Play, Eye, MessageSquareReply, CheckCircle2, Building2, ChevronDown, Plus, Clock, AlertTriangle, ShieldCheck, Activity, Check, Circle, AlertCircle, FileCheck2, UserRound } from 'lucide-react';
 
 function bucketOf(r, now) {
   if (r.status === 'approved') {
@@ -63,12 +63,17 @@ export default function ApplicantDashboard() {
       .then(res => {
         const appData = res.data.applications[0] ? { ...res.data.applications[0] } : null;
         if (appData && activeBusiness) {
-          appData.approvalRequests = generateApprovalsForBusiness(activeBusiness).map(a => ({
-            ...a,
-            status: 'not_started', // ensure all are not_started for new businesses
-            slaDeadline: new Date(Date.now() + (a.slaDays || 30) * 86400000).toISOString(),
-            lastActionAt: new Date().toISOString()
-          }));
+          const isAliceDefault = activeBusiness.id === 'b1' ||
+            (activeBusiness.sector?.toLowerCase().includes('textile') && activeBusiness.city?.toLowerCase().includes('surat'));
+
+          if (!isAliceDefault) {
+            appData.approvalRequests = generateApprovalsForBusiness(activeBusiness).map(a => ({
+              ...a,
+              status: 'not_started', // ensure all are not_started for new businesses
+              slaDeadline: new Date(Date.now() + (a.slaDays || 30) * 86400000).toISOString(),
+              lastActionAt: new Date().toISOString()
+            }));
+          }
         }
         setData(appData);
         setLoading(false);
@@ -460,6 +465,7 @@ export default function ApplicantDashboard() {
                             {r.requirementType}
                           </span>
                           <StatusBadge status={r.status} />
+                          <RiskBadge tier={r.riskTier} />
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50/50 border border-blue-100 text-[10px] font-bold text-blue-800 shrink-0 uppercase tracking-wider ml-auto">
                             <ShieldCheck size={12} className="text-blue-600" />
                             {r.routing}
@@ -499,6 +505,13 @@ export default function ApplicantDashboard() {
                             </div>
                           )}
                         </div>
+
+                        {r.statutoryBasis && (
+                          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Mandate:</span>
+                            <span className="text-slate-600 truncate">{r.statutoryBasis}</span>
+                          </div>
+                        )}
                         
                         {r.escalated && (
                           <div className="flex items-center gap-1.5 mt-3 text-xs text-rose-700 font-bold bg-rose-50 border border-rose-100 px-2 py-1 rounded-md w-fit">

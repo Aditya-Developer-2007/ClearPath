@@ -5,7 +5,6 @@ import { useBusiness } from '../context/BusinessContext';
 import {
   Bell,
   LogOut,
-  Settings as SettingsIcon,
   MessageCircle,
   ChevronUp,
   Building2,
@@ -58,11 +57,7 @@ export default function AppShell() {
     };
   }, [dropUpOpen]);
 
-  const roleLinks = user?.role ? navConfig[user.role] : [];
-  const navLinks = [...roleLinks];
-  if (import.meta.env.DEV === true) {
-    navLinks.push({ name: 'Components', path: '/dev/components', icon: SettingsIcon });
-  }
+  const navLinks = user?.role ? navConfig[user.role] || [] : [];
 
   const userName = user?.name || 'Alice Applicant';
   const userEmail = user?.email || 'alice@clearpath.gov';

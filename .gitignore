@@ -1,8 +1,10 @@
 node_modules/
 .env
-.env.local
+.env.*
+*.env
 dist/
 .DS_Store
 .vite/
 scratch/
-server/
+server/store/.runtime-db.json
+server/uploads/

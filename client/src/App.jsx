@@ -9,7 +9,6 @@ const Login = React.lazy(() => import('./pages/public/Login'));
 const Landing = React.lazy(() => import('./pages/public/Landing'));
 const Wizard = React.lazy(() => import('./pages/public/Wizard'));
 const ChecklistResult = React.lazy(() => import('./pages/public/ChecklistResult'));
-const DevComponents = React.lazy(() => import('./pages/public/DevComponents'));
 const NotFound = React.lazy(() => import('./pages/public/NotFound'));
 const ApplicantDashboard = React.lazy(() => import('./pages/applicant/Dashboard'));
 const ApplicantWorkspace = React.lazy(() => import('./pages/applicant/Workspace'));
@@ -41,10 +40,6 @@ export default function App() {
               <Route path="/start" element={<Wizard />} />
               <Route path="/result" element={<ChecklistResult />} />
               <Route path="/login" element={<Login />} />
-              
-              <Route element={<AppShell />}>
-                <Route path="/dev/components" element={import.meta.env.DEV === true ? <DevComponents /> : <NotFound />} />
-              </Route>
               
               <Route path="/app" element={<AppShell />}>
                 <Route index element={<RootRedirect />} />

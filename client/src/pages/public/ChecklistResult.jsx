@@ -144,14 +144,14 @@ export default function ChecklistResult() {
                           <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 shrink-0 shadow-inner">
                             <Icon size={18} strokeWidth={2} />
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <h3 className="font-bold text-lg text-slate-900 leading-snug tracking-tight">{app.name}</h3>
                               <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-md tracking-wider shrink-0 ${app.requirementType === 'BASE' ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
                                 {app.requirementType}
                               </span>
                             </div>
-                            <div className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-2 flex-wrap">
+                            <div className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2 flex-wrap">
                               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50/50 border border-blue-100 text-[10px] font-bold text-blue-800 shrink-0 tracking-wider uppercase">
                                 {app.routing}
                               </span>
@@ -160,6 +160,12 @@ export default function ChecklistResult() {
                                 <span className="font-mono text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 uppercase tracking-tight">Form: {app.formName}</span>
                               </div>
                             </div>
+                            {app.statutoryBasis && (
+                              <div className="text-[11px] text-slate-600 font-medium mb-2 flex items-center gap-1.5 bg-slate-50 border border-slate-200/70 rounded-md px-2.5 py-1 text-slate-700 w-fit max-w-full">
+                                <span className="font-bold text-slate-900 tracking-tight text-[10px] uppercase">Mandate:</span>
+                                <span className="text-slate-600 truncate">{app.statutoryBasis}</span>
+                              </div>
+                            )}
                             <p className="text-sm text-slate-500 mb-2 font-medium">{app.department}</p>
                             <div className="flex flex-wrap gap-2">
                               {app.docs.map(d => (
