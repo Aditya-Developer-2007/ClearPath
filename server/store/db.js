@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { getInitialSeedData } from './seedData.js';
 
@@ -8,6 +9,96 @@ const __dirname = path.dirname(__filename);
 const DB_FILE_PATH = path.join(__dirname, '.runtime-db.json');
 
 let _db = null;
+
+export function computeLogAuditHash(prevHash, action, by, timestamp, note) {
+  const payload = `${prevHash || 'GENESIS_000000000000'}|${action || ''}|${by || ''}|${timestamp || ''}|${note || ''}`;
+  return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 16);
+}
+
+export function buildChainedActivityLog(rawLogs = []) {
+  let prevHash = 'GENESIS_000000000000';
+  return rawLogs.map((log) => {
+    const ts = log.timestamp || new Date().toISOString();
+    const note = log.note || '';
+    const auditHash = computeLogAuditHash(prevHash, log.action, log.by, ts, note);
+    const chained = {
+      ...log,
+      timestamp: ts,
+      note,
+      prevHash,
+      auditHash,
+    };
+    prevHash = auditHash;
+    return chained;
+  });
+}
+
+export function appendActivityLog(approvalId, logEntry) {
+  const db = getDB();
+  if (!db.activityLogs) db.activityLogs = {};
+  if (!db.activityLogs[approvalId]) {
+    db.activityLogs[approvalId] = [];
+  }
+  const currentLogs = db.activityLogs[approvalId];
+  const lastLog = currentLogs.length > 0 ? currentLogs[currentLogs.length - 1] : null;
+  const prevHash = lastLog?.auditHash || 'GENESIS_000000000000';
+  const timestamp = logEntry.timestamp || new Date().toISOString();
+  const note = logEntry.note || '';
+
+  const auditHash = computeLogAuditHash(prevHash, logEntry.action, logEntry.by, timestamp, note);
+
+  const newLog = {
+    ...logEntry,
+    timestamp,
+    note,
+    prevHash,
+    auditHash,
+  };
+
+  currentLogs.push(newLog);
+  saveDB();
+  return newLog;
+}
+
+export function verifyAuditChainContinuity() {
+  const db = getDB();
+  let totalApprovalsAudited = 0;
+  let totalLogEntriesVerified = 0;
+  let intact = true;
+  const errors = [];
+
+  for (const [appId, logs] of Object.entries(db.activityLogs || {})) {
+    totalApprovalsAudited++;
+    let expectedPrevHash = 'GENESIS_000000000000';
+
+    for (let i = 0; i < logs.length; i++) {
+      const entry = logs[i];
+      totalLogEntriesVerified++;
+
+      if (entry.prevHash !== expectedPrevHash) {
+        intact = false;
+        errors.push(`Broken chain link in ${appId} at index ${i}: expected prevHash ${expectedPrevHash}, got ${entry.prevHash}`);
+      }
+
+      const calculatedHash = computeLogAuditHash(entry.prevHash, entry.action, entry.by, entry.timestamp, entry.note);
+      if (entry.auditHash !== calculatedHash) {
+        intact = false;
+        errors.push(`Corrupt hash in ${appId} at index ${i}: calculated ${calculatedHash}, stored ${entry.auditHash}`);
+      }
+
+      expectedPrevHash = entry.auditHash;
+    }
+  }
+
+  return {
+    ok: intact,
+    intact,
+    totalApprovalsAudited,
+    totalLogEntriesVerified,
+    algorithm: 'SHA-256 Hash Chain',
+    errors: intact ? [] : errors,
+  };
+}
 
 export function getDB() {
   if (_db) return _db;
@@ -80,13 +171,16 @@ export function getApprovalComposite(id) {
   const activityLog = db.activityLogs[id] || [];
   const msgs = db.messages[id] || [];
   const profile = db.applicantProfiles[id] || (parentApp ? {
-    name: 'Alice Applicant',
+    name: 'Aarav Mehta',
     sector: parentApp.sector,
     city: parentApp.city,
     investment: '₹30 lakh',
     employees: 12,
     hazardous: false,
     address: 'Plot 14, GIDC Sachin, Surat',
+    pan: 'AABCS1429B',
+    gstin: '24AABCS1429B1Z5',
+    udyam: 'UDYAM-GJ-22-0048192',
   } : null);
 
   return {
@@ -98,12 +192,12 @@ export function getApprovalComposite(id) {
     slaDeadline: queueRow?.slaDeadline || appReq?.slaDeadline,
     escalated: queueRow?.escalated ?? appReq?.escalated ?? false,
     escalatedFrom: queueRow?.escalatedFrom || null,
-    assignedOfficerName: queueRow?.assignedOfficerName || appReq?.assignedOfficerName || 'Bob Officer',
+    assignedOfficerName: queueRow?.assignedOfficerName || appReq?.assignedOfficerName || 'Vikramaditya Sinh',
     deskNo: appReq?.deskNo || '2',
     warningsCount: queueRow?.warningsCount ?? 0,
     lastActionAt: queueRow?.lastActionAt || appReq?.lastActionAt || null,
-    applicantName: queueRow?.applicantName || 'Alice Applicant',
-    unitName: queueRow?.unitName || (parentApp ? `${parentApp.sector}, ${parentApp.city}` : 'Textile unit, Surat'),
+    applicantName: queueRow?.applicantName || 'Aarav Mehta',
+    unitName: queueRow?.unitName || (parentApp ? `${parentApp.sector}, ${parentApp.city}` : 'Surya Vastra Mills Pvt. Ltd., Surat'),
     applicantProfile: profile,
     requiredDocs: reqDocs,
     documents: docs,
@@ -113,8 +207,12 @@ export function getApprovalComposite(id) {
     formName: appReq?.formName || queueRow?.formName || 'Standard CAF',
     stage: appReq?.stage || queueRow?.stage || 'Stage C: Commissioning / Pre-operation Stage',
     requirementType: appReq?.requirementType || queueRow?.requirementType || 'BASE',
-    routing: appReq?.routing || queueRow?.routing || 'Routed via State Portal',
+    routing: appReq?.routing || queueRow?.routing || 'Routed via Investor Facilitation Portal (IFP Gujarat)',
     needsInspection: appReq?.needsInspection ?? (queueRow ? true : false),
+    statutoryFeeInr: appReq?.statutoryFeeInr !== undefined ? appReq.statutoryFeeInr : (queueRow?.statutoryFeeInr || 2500),
+    feeFormula: appReq?.feeFormula || queueRow?.feeFormula || 'Standard Statutory Fee Schedule',
+    rtpsActClause: appReq?.rtpsActClause || queueRow?.rtpsActClause || 'Right to Public Services Act — Auto-Escalation & ₹250/day SLA Delay Liability',
+    certificateMeta: queueRow?.certificateMeta || appReq?.certificateMeta || null,
   };
 }
 
@@ -122,8 +220,32 @@ export function updateApprovalStatus(id, newStatus, extra = {}) {
   const db = getDB();
   const ts = new Date().toISOString();
 
-  // Update in queue
+  // Find target objects
   const qRow = db.queue.find((r) => r.id === id);
+  let appReq = null;
+  for (const app of db.applications) {
+    const found = (app.approvalRequests || []).find((r) => r.id === id);
+    if (found) {
+      appReq = found;
+      break;
+    }
+  }
+
+  // Generate certificateMeta on approval
+  let certMeta = null;
+  if (newStatus === 'approved') {
+    const officer = extra.assignedOfficerName || qRow?.assignedOfficerName || appReq?.assignedOfficerName || 'Vikramaditya Sinh';
+    const dept = (qRow?.department || appReq?.department || 'GOV').toUpperCase().slice(0, 4);
+    certMeta = {
+      certificateNo: `NOC-${dept}-2026-${id.toUpperCase()}`,
+      issuedAt: ts,
+      approvedBy: officer,
+      sha256Signature: crypto.createHash('sha256').update(`${id}:${qRow?.name || appReq?.name}:${officer}:${ts}`).digest('hex'),
+      statutoryBasis: qRow?.statutoryBasis || appReq?.statutoryBasis || 'Statutory clearance under Indian Industrial Law',
+    };
+  }
+
+  // Update in queue
   if (qRow) {
     qRow.status = newStatus;
     qRow.lastActionAt = ts;
@@ -131,19 +253,17 @@ export function updateApprovalStatus(id, newStatus, extra = {}) {
     if (extra.escalatedFrom) qRow.escalatedFrom = extra.escalatedFrom;
     if (extra.assignedOfficerName) qRow.assignedOfficerName = extra.assignedOfficerName;
     if (extra.warningsCount !== undefined) qRow.warningsCount = extra.warningsCount;
+    if (certMeta) qRow.certificateMeta = certMeta;
   }
 
   // Update in applications
-  for (const app of db.applications) {
-    const req = (app.approvalRequests || []).find((r) => r.id === id);
-    if (req) {
-      req.status = newStatus;
-      req.lastActionAt = ts;
-      if (extra.escalated !== undefined) req.escalated = extra.escalated;
-      if (extra.assignedOfficerName) req.assignedOfficerName = extra.assignedOfficerName;
-    }
+  if (appReq) {
+    appReq.status = newStatus;
+    appReq.lastActionAt = ts;
+    if (extra.escalated !== undefined) appReq.escalated = extra.escalated;
+    if (extra.assignedOfficerName) appReq.assignedOfficerName = extra.assignedOfficerName;
+    if (certMeta) appReq.certificateMeta = certMeta;
   }
 
   saveDB();
 }
-

@@ -126,7 +126,9 @@ export const askAssistant = async (question) => {
     const isTimeQuestion = /(how long|how much time|days|sla|time|kitne din|kitna samay|kab tak|duration|din)/i.test(normalized);
 
     let answer = '';
-    if (matchedEntry.sourceRef === 'GOV-14') {
+    if (matchedEntry.sourceRef === 'TND-15') {
+      answer = 'Public procurement on GeM (Government e-Marketplace) and CPPP requires 100% verified statutory compliance under the Public Procurement Policy for MSEs Order, 2012. ClearPath unlocks tender participation and bid details once all statutory clearances (Factory Licence, Fire NOC, Pollution CTE, Labour, etc.) reach "approved" status, granting 100% EMD exemptions and MSE price preference.';
+    } else if (matchedEntry.sourceRef === 'GOV-14') {
       answer = 'Eligible government support schemes include PMEGP (up to 35% capital subsidy for projects <= ₹50 Lakh), CGTMSE (collateral-free credit guarantee up to ₹5 Crore), State Interest Subsidy (5-7% for 5 years), and ZED green compliance grants. Apply via KVIC e-Portal, SIDBI, or State Directorate under Credit Linked Capital Subsidy Scheme & State Industrial Policy.';
     } else if (matchedEntry.sourceRef === 'ADM-08') {
       answer = 'Inspections for Fire Safety and Pollution Clearance can be combined into a single joint visit. This reduces separate visits and coordinates site verification across departments under the Unified Central Inspection Scheme.';

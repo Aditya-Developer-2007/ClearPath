@@ -2,15 +2,14 @@ import { getOfficerStore } from './officerQueue';
 import { myApplicationsCache } from './applicantStore';
 
 const now = Date.now();
-const D = (deltaDays) => new Date(now + deltaDays * 86400000).toISOString();
 
 const INSPECTIONS_INITIAL = [
   {
     id: 'insp-1',
-    applicantName: 'Alice Applicant',
-    unitName: 'Textile unit, Surat',
+    applicantName: 'Aarav Mehta',
+    unitName: 'Surya Vastra Mills Pvt. Ltd., Surat',
     approvalRequestIds: ['req2', 'req3'],
-    approvals: ['Fire NOC', 'Pollution Consent'],
+    approvals: ['Provisional Fire Safety NOC', 'Pollution Consent (Orange)'],
     proposedDate: new Date(now + 8 * 86400000).toISOString().split('T')[0],
     visitsSaved: 1,
     status: 'proposed',
@@ -18,9 +17,9 @@ const INSPECTIONS_INITIAL = [
   {
     id: 'insp-2',
     applicantName: 'Harish Bhandari',
-    unitName: 'Bhandari Pharma, Ankleshwar',
+    unitName: 'shakti Switchgear & Transformers, Vadodara',
     approvalRequestIds: ['q-5'],
-    approvals: ['Fire Safety Audit', 'Environmental Clearance'],
+    approvals: ['HT Industrial Power Sanction', 'Electrical Safety Certificate'],
     proposedDate: new Date(now + 12 * 86400000).toISOString().split('T')[0],
     visitsSaved: 1,
     status: 'proposed',
@@ -49,8 +48,11 @@ export function scheduleInspection(id, slotDate) {
       proposal.proposedDate = slotDate;
     }
 
-    // Reflect on Alice's applicant dashboard if it's Alice's unit
-    if (proposal.applicantName === 'Alice Applicant' || proposal.approvalRequestIds.includes('req2')) {
+    if (
+      proposal.applicantName === 'Aarav Mehta' ||
+      proposal.applicantName === 'Alice Applicant' ||
+      proposal.approvalRequestIds.includes('req2')
+    ) {
       if (myApplicationsCache?.applications?.[0]) {
         myApplicationsCache.applications[0].scheduledInspection = {
           id: proposal.id,
@@ -64,20 +66,19 @@ export function scheduleInspection(id, slotDate) {
 }
 
 export const SENIOR_OFFICERS = {
-  'Fire Dept': 'S. Verma',
-  Environment: 'P. Rao',
-  Labour: 'K. Iyer',
-  Industrial: 'M. Shah',
-  Utilities: 'D. Nair',
+  'Fire Dept': 'Director, State Fire & Emergency Services',
+  Safety: 'Director, State Fire & Emergency Services',
+  Environment: 'Member Secretary, State PCB',
+  Industrial: 'Chief Inspector of Factories (DISH)',
+  Labour: 'Additional Labour Commissioner',
+  Utilities: 'Chief Engineer (Commercial), State DISCOM',
 };
 
 export function escalateRequest(id, department) {
   const officerStore = getOfficerStore();
 
-  // Find in officerStore.queue
   const queueRow = officerStore.queue.find((r) => r.id === id);
 
-  // Find in myApplicationsCache
   let cacheReq = null;
   if (myApplicationsCache?.applications) {
     for (const app of myApplicationsCache.applications) {
@@ -91,16 +92,14 @@ export function escalateRequest(id, department) {
 
   if (!queueRow && !cacheReq) return false;
 
-  // Keep the escalated === false guard
   const isAlreadyEscalated = (queueRow && queueRow.escalated) || (cacheReq && cacheReq.escalated);
   if (isAlreadyEscalated) return false;
 
-  const dept = department || queueRow?.department || cacheReq?.department || 'Fire Dept';
+  const dept = department || queueRow?.department || cacheReq?.department || 'Safety';
   const officerName = SENIOR_OFFICERS[dept] || 'Senior Officer';
   const assignedOfficerTitle = `${officerName}, Senior Officer, ${dept}`;
   const nowIso = new Date().toISOString();
 
-  // 1. Escalated flag & reassignment
   if (queueRow) {
     queueRow.escalated = true;
     queueRow.escalatedFrom = 'SLA Breach Auto-Escalation';
@@ -111,10 +110,9 @@ export function escalateRequest(id, department) {
     cacheReq.assignedOfficerName = assignedOfficerTitle;
   }
 
-  // 2. ActivityLog entry (Timeline system entry)
   if (!officerStore.activityLogs[id]) {
     officerStore.activityLogs[id] = [
-      { action: 'Application Created', by: cacheReq ? 'Alice Applicant' : 'Applicant', timestamp: new Date(Date.now() - 10 * 86400000).toISOString(), note: '' },
+      { action: 'Application Created', by: cacheReq ? 'Aarav Mehta' : 'Applicant', timestamp: new Date(Date.now() - 10 * 86400000).toISOString(), note: '' },
       { action: 'Officer Assigned', by: 'System', timestamp: new Date(Date.now() - 9 * 86400000).toISOString(), note: '' },
     ];
   }
@@ -125,7 +123,6 @@ export function escalateRequest(id, department) {
     note: `SLA deadline breached. Reassigned to ${assignedOfficerTitle}.`,
   });
 
-  // 3. System thread message
   if (!officerStore.messages[id]) {
     officerStore.messages[id] = [];
   }
@@ -146,7 +143,6 @@ export function fastForward(days) {
   const newlyEscalated = [];
   let shiftedCount = 0;
 
-  // 1. Shift open requests in officerQueue
   officerStore.queue.forEach((row) => {
     if (!['approved', 'rejected'].includes(row.status)) {
       const oldMs = new Date(row.slaDeadline).getTime();
@@ -154,7 +150,6 @@ export function fastForward(days) {
       row.slaDeadline = newDeadline;
       shiftedCount++;
 
-      // Guard: only escalate if past deadline and NOT already escalated
       if (new Date(newDeadline) < currentNow && row.escalated === false) {
         const didEscalate = escalateRequest(row.id, row.department);
         if (didEscalate && !newlyEscalated.includes(row.id)) {
@@ -164,7 +159,6 @@ export function fastForward(days) {
     }
   });
 
-  // 2. Sync to applicant store (myApplicationsCache) and escalate open requests only in applicant store
   if (myApplicationsCache?.applications) {
     myApplicationsCache.applications.forEach((app) => {
       (app.approvalRequests || []).forEach((req) => {
@@ -199,7 +193,6 @@ export function getAnalytics() {
   const officerStore = getOfficerStore();
   const currentNow = new Date();
 
-  // Distinct applications
   const applicationUnits = new Set();
   officerStore.queue.forEach((r) => {
     const key = r.unitName || r.applicantName || r.id;
@@ -213,7 +206,6 @@ export function getAnalytics() {
   }
   const totalApplications = applicationUnits.size;
 
-  // Collect all requests from officer queue and applicant store (deduping by id)
   const reqsMap = new Map();
   officerStore.queue.forEach((r) => reqsMap.set(r.id, { ...r }));
   if (myApplicationsCache?.applications) {
@@ -223,7 +215,7 @@ export function getAnalytics() {
           reqsMap.set(r.id, {
             id: r.id,
             name: r.name,
-            applicantName: 'Alice Applicant',
+            applicantName: 'Aarav Mehta',
             unitName: `${app.sector}, ${app.city}`,
             department: r.department,
             status: r.status,
@@ -247,7 +239,6 @@ export function getAnalytics() {
     escalations: escalations.length,
   };
 
-  // Department statistics
   const depts = ['Fire Dept', 'Environment', 'Industrial', 'Utilities', 'Labour'];
   const byDepartment = depts.map((dept) => {
     const deptAll = allReqs.filter((r) => r.department === dept);
@@ -255,7 +246,7 @@ export function getAnalytics() {
     const deptBreaches = deptOpen.filter((r) => new Date(r.slaDeadline) < currentNow).length;
 
     let avgDays = 14;
-    if (dept === 'Fire Dept') avgDays = 14;
+    if (dept === 'Fire Dept' || dept === 'Safety') avgDays = 14;
     else if (dept === 'Environment') avgDays = 22;
     else if (dept === 'Industrial') avgDays = 16;
     else if (dept === 'Utilities') avgDays = 11;
@@ -269,7 +260,6 @@ export function getAnalytics() {
     };
   });
 
-  // Slowest open requests
   const slowest = openReqs.map((r) => {
     const overdueDays = Math.max(0, Math.ceil((currentNow - new Date(r.slaDeadline)) / 86400000));
     const daysTaken = r.lastActionAt
@@ -279,7 +269,7 @@ export function getAnalytics() {
     return {
       id: r.id,
       name: r.name,
-      applicantName: r.applicantName || 'Alice Applicant',
+      applicantName: r.applicantName || 'Aarav Mehta',
       dept: r.department || 'General',
       daysTaken,
       overdueDays,

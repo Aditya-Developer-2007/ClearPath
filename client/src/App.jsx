@@ -50,6 +50,9 @@ export default function App() {
                 <Route path="approvals/:id" element={
                   <ProtectedRoute allowedRoles={['applicant']}><ApplicantWorkspace /></ProtectedRoute>
                 } />
+                <Route path="workspace/:id" element={
+                  <ProtectedRoute allowedRoles={['applicant']}><ApplicantWorkspace /></ProtectedRoute>
+                } />
                 <Route path="*" element={<ProtectedRoute allowedRoles={['applicant']}><div>Placeholder</div></ProtectedRoute>} />
                 
               </Route>

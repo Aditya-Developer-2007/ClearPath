@@ -10,6 +10,8 @@
 // - Hazardous & Other Wastes (M&TM) Rules, 2016
 // - Indian Boilers Act, 1923
 // - PMEGP, CGTMSE & State Industrial Policy Subsidies
+// - Right to Public Services (RTPS) Act Timelines & Statutory Guarantee
+// - Public Procurement Policy for MSEs Order, 2012 (GeM & CPPP Tenders)
 
 export function getStatePortalBadge(state) {
   const s = (state || '').toLowerCase();
@@ -91,6 +93,176 @@ export function normalizeBusinessInput(input = {}) {
     state,
     city: input.city || (state === 'Gujarat' ? 'Surat' : ''),
     stage: input.stage || 'New',
+  };
+}
+
+// ── Dynamic Statutory Fee Calculator ─────────────────────────────────────────
+export function computeStatutoryFee(code, ctx = {}) {
+  const emp = Number(ctx.employees) || 12;
+  const haz = Boolean(ctx.hazardous);
+
+  switch (code) {
+    case 'MSME-06':
+      return {
+        statutoryFeeInr: 0,
+        feeFormula: 'Exempt — Statutory Free Portal under MSMED Act',
+      };
+    case 'FIN-07':
+      return {
+        statutoryFeeInr: 0,
+        feeFormula: 'Statutory Zero Fee on GSTN & State Tax Portal',
+      };
+    case 'FD-01': {
+      const fee = 5000 + (haz ? 10000 : 2500);
+      return {
+        statutoryFeeInr: fee,
+        feeFormula: '₹15/sq.m Fire Cess under State Fire Act',
+      };
+    }
+    case 'ENV-02': {
+      if (haz || ctx.sector === 'chemical') {
+        return {
+          statutoryFeeInr: 15000,
+          feeFormula: 'SPCB Consent Fee Slab for Investment <= ₹1 Cr',
+        };
+      }
+      if (['textile', 'food', 'engineering', 'manufacturing'].includes(ctx.sector)) {
+        return {
+          statutoryFeeInr: 7500,
+          feeFormula: 'SPCB Consent Fee Slab for Investment <= ₹1 Cr',
+        };
+      }
+      return {
+        statutoryFeeInr: 2000,
+        feeFormula: 'SPCB Consent Fee Slab for Investment <= ₹1 Cr',
+      };
+    }
+    case 'IND-03':
+      return {
+        statutoryFeeInr: emp <= 20 ? 4500 : 9000,
+        feeFormula: 'Factories Act Schedule-I (HP + Workforce Slab)',
+      };
+    case 'LAB-04':
+      return {
+        statutoryFeeInr: emp < 10 ? 1000 : 3000,
+        feeFormula: 'Shram Suvidha Headcount Slab',
+      };
+    case 'UTL-05':
+      return {
+        statutoryFeeInr: 6500,
+        feeFormula: 'DISCOM LT/HT Application & Line Inspection Fee',
+      };
+    case 'FSSAI-09':
+      return {
+        statutoryFeeInr: 5000,
+        feeFormula: 'FoSCoS Schedule-3 State Manufacturing Fee (Annual)',
+      };
+    case 'HAZ-11':
+      return {
+        statutoryFeeInr: 12000,
+        feeFormula: 'HOWM Rules Authorization & Scrutiny Fee',
+      };
+    case 'BOIL-13':
+      return {
+        statutoryFeeInr: 6000,
+        feeFormula: 'Indian Boiler Regulations Steam Rating Slab',
+      };
+    default:
+      return {
+        statutoryFeeInr: 2500,
+        feeFormula: 'Standard Statutory Scrutiny Fee',
+      };
+  }
+}
+
+// ── RTPS Urgency Score Calculator ───────────────────────────────────────────
+export function computeUrgencyScore(approval) {
+  if (!approval) return 0;
+  if (['approved', 'rejected'].includes(approval.status)) return 0;
+
+  let score = 50;
+  const now = Date.now();
+  const deadlineMs = approval.slaDeadline
+    ? new Date(approval.slaDeadline).getTime()
+    : now + (approval.slaDays || 21) * 86400000;
+
+  const hoursRemaining = (deadlineMs - now) / 3600000;
+
+  if (hoursRemaining < 0) {
+    const daysOverdue = Math.abs(Math.floor(hoursRemaining / 24));
+    score += 100 + daysOverdue * 10;
+  } else if (hoursRemaining <= 48) {
+    score += 60;
+  } else if (hoursRemaining <= 120) {
+    score += 40;
+  } else if (hoursRemaining <= 240) {
+    score += 20;
+  } else {
+    score += 5;
+  }
+
+  if (approval.escalated) {
+    score += 50;
+  }
+
+  const risk = (approval.riskTier || '').toLowerCase();
+  if (risk === 'high') score += 30;
+  else if (risk === 'medium') score += 15;
+  else score += 5;
+
+  const warnings = Number(approval.warningsCount) || (approval.documents ? approval.documents.reduce((acc, d) => acc + (d.warnings?.length || 0), 0) : 0);
+  score += warnings * 10;
+
+  return score;
+}
+
+// ── Critical-Path SLA & Fee Turnaround Summary ───────────────────────────────
+export function calculateCriticalPath(approvals = []) {
+  if (!Array.isArray(approvals) || approvals.length === 0) {
+    return {
+      estimatedDays: 0,
+      sequentialDays: 0,
+      parallelDaysSaved: 0,
+      totalStatutoryFeeInr: 0,
+      stageBreakdown: {},
+    };
+  }
+
+  const stageBreakdown = {};
+  let sequentialDays = 0;
+  let totalStatutoryFeeInr = 0;
+
+  for (const app of approvals) {
+    const stage = app.stage || 'Stage C: Commissioning / Pre-operation Stage';
+    const sla = Number(app.slaDays) || 0;
+    const fee = Number(app.statutoryFeeInr) || 0;
+
+    sequentialDays += sla;
+    totalStatutoryFeeInr += fee;
+
+    if (!stageBreakdown[stage]) {
+      stageBreakdown[stage] = { maxDays: 0, approvals: [] };
+    }
+    stageBreakdown[stage].approvals.push(app.id || app.code);
+    if (sla > stageBreakdown[stage].maxDays) {
+      stageBreakdown[stage].maxDays = sla;
+    }
+  }
+
+  let estimatedDays = 0;
+  for (const stageKey of Object.keys(stageBreakdown)) {
+    estimatedDays += stageBreakdown[stageKey].maxDays;
+  }
+
+  if (estimatedDays === 0) estimatedDays = 30;
+  const parallelDaysSaved = Math.max(0, sequentialDays - estimatedDays);
+
+  return {
+    estimatedDays,
+    sequentialDays,
+    parallelDaysSaved,
+    totalStatutoryFeeInr,
+    stageBreakdown,
   };
 }
 
@@ -260,44 +432,44 @@ export const STATUTORY_CATALOG = [
     riskTier: 'medium',
     needsInspection: true,
     requirementType: 'IF APPLICABLE',
-    statutoryBasis: 'Food Safety and Standards Act, 2006 (Section 31) — Food Processing Unit',
-    docs: ['Food Processing Unit Layout', 'NABL Water Analytical Report', 'FSMS Plan & Equipment List'],
-    keywords: ['fssai', 'food', 'food safety', 'foscos', 'fssai-09'],
+    statutoryBasis: 'Food Safety & Standards Act, 2006 (Section 31) — State Manufacturing Capacity',
+    docs: ['Food Safety Management System (FSMS) Plan', 'Water Potability Test Report', 'List of Food Categories & Equipment'],
+    keywords: ['fssai', 'food', 'khana', 'edible', 'foscos', 'fssai-09'],
     matches: (ctx) => ctx.sector === 'food',
   },
   {
     code: 'HAZ-11',
-    name: 'Hazardous Chemical & Waste Authorization',
+    name: 'Hazardous Waste Authorization (HOWM)',
     department: 'Environment',
     stage: 'Stage D: Industry-Specific Compliance',
     formName: 'HOWM Form-1 & MSIHC Schedule',
-    slaDays: 30,
+    slaDays: 45,
     riskTier: 'high',
     needsInspection: true,
     requirementType: 'IF APPLICABLE',
     statutoryBasis: 'Hazardous & Other Wastes (M&TM) Rules, 2016 & MSIHC Rules, 1989',
-    docs: ['Material Safety Data Sheets (MSDS)', 'On-Site Emergency Plan', 'TSDF Membership Certificate'],
-    keywords: ['hazardous', 'waste', 'hwm', 'haz-11', 'chemical waste'],
+    docs: ['Emergency Response Plan', 'Hazardous Waste Generation & Storage Protocol', 'TSDF Membership Certificate'],
+    keywords: ['hazardous', 'chemical', 'toxic', 'waste', 'hazmat', 'msihc', 'haz-11'],
     matches: (ctx) => ctx.hazardous === true || ctx.sector === 'chemical',
   },
   {
     code: 'BOIL-13',
-    name: 'Textile / Industrial Boiler Registration',
+    name: 'Industrial Boiler Registration',
     department: 'Industrial',
-    stage: 'Stage D: Industry-Specific Compliance',
-    formName: 'IBR Form-I',
+    stage: 'Stage C: Commissioning / Pre-operation Stage',
+    formName: 'Boiler Form-B',
     slaDays: 21,
     riskTier: 'medium',
     needsInspection: true,
     requirementType: 'IF APPLICABLE',
-    statutoryBasis: 'Indian Boilers Act, 1923 — Steam / Thermal Processing Unit',
-    docs: ['Boiler Manufacturer IBR Certificate', 'Steam Pipeline Drawing'],
-    keywords: ['boiler', 'lifting', 'equipment', 'boil-13', 'steam', 'ibr'],
-    matches: (ctx) => ctx.sector === 'textile' && Number(ctx.investmentLakh) >= 25,
+    statutoryBasis: 'Indian Boilers Act, 1923 (Section 7) — Steam Generation Vessels',
+    docs: ['Boiler Maker Certificate', 'Welder Qualification Record', 'Hydraulic Test Certificate'],
+    keywords: ['boiler', 'steam', 'steam vessel', 'pressure vessel', 'boil-13'],
+    matches: (ctx) => ['textile', 'chemical'].includes(ctx.sector),
   },
 ];
 
-// ── Government Support & Subsidy Schemes Catalog ───────────────────────────
+// ── Statutory Government Support & Subsidy Schemes Catalog ──────────────────
 export const SCHEMES_CATALOG = [
   {
     code: 'SCH-01',
@@ -322,17 +494,17 @@ export const SCHEMES_CATALOG = [
     name: 'State Industrial Policy Interest & Power Subsidy',
     getAgency: (ctx) => (ctx.state === 'Gujarat' ? 'Industries & Mines Dept, Gujarat' : 'State Directorate of Industries'),
     benefit: '5% to 7% Interest Subsidy for 5 Years + Electricity Duty Exemption',
-    eligibilityBasis: 'Eligible: New/Expanding MSME industrial unit under State Industrial Policy',
-    getPortal: (ctx) => getStatePortalBadge(ctx.state).replace('Routed via ', ''),
+    eligibilityBasis: 'Eligible: Concessional term loan interest & industrial power tariff exemption',
+    getPortal: (ctx) => (ctx.state === 'Gujarat' ? 'Investor Facilitation Portal (IFP Gujarat)' : 'State Single Window System'),
     matches: (ctx) => Number(ctx.investmentLakh) <= 5000,
   },
   {
     code: 'SCH-04',
-    name: 'ZED / Green Env Compliance Subsidy (Pollution Control)',
-    agency: 'Ministry of MSME & SPCB',
-    benefit: 'Up to 50% Financial Assistance on ETP / Air Pollution Control Equipment',
-    eligibilityBasis: 'Eligible: Orange/Red category unit installing mandatory pollution control systems',
-    portal: 'MSME ZED / State PCB Portal',
+    name: 'ZED Certification & Clean Technology Subsidy',
+    agency: 'Ministry of MSME',
+    benefit: 'Up to 80% Subsidy on Clean Tech, Energy Audits & ZED Certification',
+    eligibilityBasis: 'Eligible: Zero Defect Zero Effect (ZED) green process compliance',
+    portal: 'MSME ZED Official Portal',
     matches: (ctx) => ctx.hazardous === true || ['textile', 'chemical', 'food'].includes(ctx.sector),
   },
 ];
@@ -343,9 +515,7 @@ export function evaluateEligibleSchemes(rawInput = {}) {
 
   for (const entry of SCHEMES_CATALOG) {
     if (!entry.matches(ctx)) continue;
-
     matched.push({
-      id: entry.code,
       code: entry.code,
       name: entry.name,
       agency: typeof entry.getAgency === 'function' ? entry.getAgency(ctx) : entry.agency,
@@ -358,7 +528,159 @@ export function evaluateEligibleSchemes(rawInput = {}) {
   return matched;
 }
 
-// Mapping for canonical demo IDs (req1..req7) used in the Alice applicant profile
+// ── Statutory GeM / CPPP Government Tenders Catalog ─────────────────────────
+export const TENDERS_CATALOG = [
+  // Textile (sector === "textile")
+  {
+    code: 'TND-GJ-101',
+    name: 'Supply of Fire-Retardant Industrial Cotton Uniforms & Fabric',
+    buyer: 'Gujarat State Road Transport Corp (GSRTC) — GeM Portal',
+    tenderValue: '₹42.50 Lakh',
+    emdExemption: '100% MSE Exempt (Udyam Verified)',
+    portalRef: 'GEM/2026/B/4829104',
+    bidWindow: '21 Days Open',
+    statutoryPreRequisite: 'Requires 100% Approved Factory, Fire Safety & GPCB Clearances',
+    sector: 'textile',
+    matches: (ctx) => ctx.sector === 'textile',
+  },
+  {
+    code: 'TND-IN-102',
+    name: 'Procurement of Institutional Bed Linen & Hospital Textiles',
+    buyer: 'ESIC Model Hospitals Directorate (Ministry of Labour)',
+    tenderValue: '₹68.00 Lakh',
+    emdExemption: 'MSE Price Preference (15% Band)',
+    portalRef: 'CPPP/2026/ESIC/8821',
+    bidWindow: '30 Days Open',
+    statutoryPreRequisite: 'Requires Valid Udyam, GST, EPF/ESIC & Boiler Compliance',
+    sector: 'textile',
+    matches: (ctx) => ctx.sector === 'textile',
+  },
+
+  // Food Processing (sector === "food")
+  {
+    code: 'TND-GJ-201',
+    name: 'Supply of Fortified Edible Oil & Spices for Mid-Day Meal Scheme',
+    buyer: 'Commissioner of Mid-Day Meals, Govt. of Gujarat',
+    tenderValue: '₹85.00 Lakh',
+    emdExemption: '100% MSE Exempt',
+    portalRef: 'GEM/2026/B/5190231',
+    bidWindow: '18 Days Open',
+    statutoryPreRequisite: 'Requires Active FSSAI State Manufacturing Licence & SPCB Consent',
+    sector: 'food',
+    matches: (ctx) => ctx.sector === 'food',
+  },
+  {
+    code: 'TND-IN-202',
+    name: 'Empanelment of Processed Ration Suppliers for CAPF Canteens',
+    buyer: 'Kendriya Police Kalyan Bhandar (Ministry of Home Affairs)',
+    tenderValue: '₹1.20 Crore',
+    emdExemption: 'MSE Turnover Relaxed',
+    portalRef: 'CPPP/2026/MHA/3319',
+    bidWindow: '25 Days Open',
+    statutoryPreRequisite: 'Requires 100% Statutory Clearance & NABL Food Safety Audit',
+    sector: 'food',
+    matches: (ctx) => ctx.sector === 'food',
+  },
+
+  // Chemical / Hazardous (sector === "chemical" or hazardous === true)
+  {
+    code: 'TND-GJ-301',
+    name: 'Supply of Water Treatment & Effluent Neutralization Chemicals',
+    buyer: 'Gujarat Industrial Development Corporation (GIDC Water Supply)',
+    tenderValue: '₹1.45 Crore',
+    emdExemption: '100% MSE Exempt',
+    portalRef: 'GEM/2026/B/6091822',
+    bidWindow: '14 Days Open',
+    statutoryPreRequisite: 'Requires Red-Category CTE/CTO & HOWM Hazardous Authorization',
+    sector: 'chemical',
+    matches: (ctx) => ctx.hazardous === true || ctx.sector === 'chemical',
+  },
+  {
+    code: 'TND-IN-302',
+    name: 'Industrial Specialty Solvents & Lab Reagents Rate Contract',
+    buyer: 'ONGC Western Onshore Basin, Vadodara',
+    tenderValue: '₹2.10 Crore',
+    emdExemption: 'MSE Purchase Preference',
+    portalRef: 'CPPP/2026/ONGC/7741',
+    bidWindow: '28 Days Open',
+    statutoryPreRequisite: 'Requires Chief Fire Officer NOC & DISH Factory Licence',
+    sector: 'chemical',
+    matches: (ctx) => ctx.hazardous === true || ctx.sector === 'chemical',
+  },
+
+  // Engineering / Manufacturing / Default
+  {
+    code: 'TND-IN-401',
+    name: 'Supply of LT/HT Switchgear Enclosures & Precision Fabricated Parts',
+    buyer: 'Dakshin Gujarat Vij Company Ltd. (DGVCL DISCOM)',
+    tenderValue: '₹54.00 Lakh',
+    emdExemption: '100% MSE Exempt',
+    portalRef: 'GEM/2026/B/7120944',
+    bidWindow: '20 Days Open',
+    statutoryPreRequisite: 'Requires Factory Licence, DISCOM Sanction & Udyam Registration',
+    sector: 'engineering',
+    matches: (ctx) => ['engineering', 'manufacturing', 'electronics', 'pharma'].includes(ctx.sector),
+  },
+  {
+    code: 'TND-IN-402',
+    name: 'Rate Contract for Industrial Valves & Mechanical Assemblies',
+    buyer: 'Indian Railways — Western Railway Workshop, Dahod',
+    tenderValue: '₹92.00 Lakh',
+    emdExemption: '100% MSE Exempt',
+    portalRef: 'IREPS/2026/WR/1190',
+    bidWindow: '24 Days Open',
+    statutoryPreRequisite: 'Requires 100% Statutory Clearances & DISH Approval',
+    sector: 'engineering',
+    matches: (ctx) => ['engineering', 'manufacturing', 'electronics', 'pharma'].includes(ctx.sector),
+  },
+];
+
+export function evaluateGovernmentTenders(businessInput = {}, approvalsList = []) {
+  const ctx = normalizeBusinessInput(businessInput);
+
+  let matched = TENDERS_CATALOG.filter((t) => t.matches(ctx));
+  if (matched.length === 0) {
+    matched = TENDERS_CATALOG.filter((t) => ['TND-IN-401', 'TND-IN-402'].includes(t.code));
+  }
+
+  const list = Array.isArray(approvalsList) ? approvalsList : [];
+  const totalApprovals = list.length;
+  const approvedList = list.filter((a) => a.status === 'approved');
+  const approvedCount = approvedList.length;
+  const pendingApprovals = list
+    .filter((a) => a.status !== 'approved')
+    .map((a) => ({ id: a.id || a.code, code: a.code || a.id, name: a.name, status: a.status || 'not_started' }));
+
+  const isUnlocked = totalApprovals > 0 && approvedCount === totalApprovals;
+
+  return {
+    isUnlocked,
+    totalApprovals,
+    approvedCount,
+    pendingCount: pendingApprovals.length,
+    blockingApprovals: pendingApprovals,
+    tenders: matched.map((t) => ({
+      id: t.code,
+      code: t.code,
+      name: t.name,
+      title: t.name,
+      buyer: t.buyer,
+      issuingAuthority: t.buyer,
+      tenderValue: t.tenderValue,
+      estimatedValue: t.tenderValue,
+      emdExemption: t.emdExemption,
+      portalRef: t.portalRef,
+      portal: t.portalRef?.includes('GEM') ? 'GeM (Govt. e-Marketplace)' : (t.portalRef?.includes('IREPS') ? 'IREPS Railway Portal' : 'CPPP Central Portal'),
+      bidWindow: t.bidWindow,
+      bidWindowDays: parseInt(t.bidWindow, 10) || 21,
+      statutoryPreRequisite: t.statutoryPreRequisite,
+      prerequisite: t.statutoryPreRequisite,
+      sector: t.sector,
+    })),
+  };
+}
+
+// Mapping for canonical demo IDs (req1..req7)
 const DEMO_CODE_TO_REQ_ID = {
   'IND-03': 'req1',
   'FD-01': 'req2',
@@ -392,6 +714,7 @@ export function evaluateStatutoryApprovals(rawInput = {}, options = {}) {
 
     const code = entry.code;
     const id = (preserveDemoIds && DEMO_CODE_TO_REQ_ID[code]) ? DEMO_CODE_TO_REQ_ID[code] : code;
+    const feeInfo = computeStatutoryFee(code, ctx);
 
     results.push({
       id,
@@ -409,10 +732,19 @@ export function evaluateStatutoryApprovals(rawInput = {}, options = {}) {
       routing,
       keywords: entry.keywords,
       status: 'not_started',
+      statutoryFeeInr: dynamicProps.statutoryFeeInr !== undefined ? dynamicProps.statutoryFeeInr : feeInfo.statutoryFeeInr,
+      feeFormula: dynamicProps.feeFormula || feeInfo.feeFormula,
+      rtpsActClause: 'Right to Public Services Act — Auto-Escalation & ₹250/day SLA Delay Liability',
     });
   }
 
   results.schemes = evaluateEligibleSchemes(rawInput);
+  const criticalPath = calculateCriticalPath(results);
+  results.criticalPath = criticalPath;
+  results.totalStatutoryFeeInr = criticalPath.totalStatutoryFeeInr;
+  results.estimatedDays = criticalPath.estimatedDays;
+  results.tenderGate = evaluateGovernmentTenders(rawInput, results);
+
   return results;
 }
 
@@ -421,7 +753,7 @@ export function generateApprovalsForBusiness(data) {
 }
 
 export function deriveApprovalMetadata(app, state = 'Gujarat') {
-  if (app.statutoryBasis && app.stage && app.formName && app.routing) {
+  if (app.statutoryBasis && app.stage && app.formName && app.routing && app.statutoryFeeInr !== undefined) {
     return app;
   }
   const name = (app.name || '').toLowerCase();
@@ -436,7 +768,12 @@ export function deriveApprovalMetadata(app, state = 'Gujarat') {
   let statutoryBasis = app.statutoryBasis || catalogMatch?.statutoryBasis || 'Statutory clearance under Indian Industrial Law';
   let routing = app.routing || getStatePortalBadge(state);
 
-  return { ...app, stage, formName, requirementType, statutoryBasis, routing };
+  const feeInfo = computeStatutoryFee(catalogMatch?.code || app.code, app);
+  const statutoryFeeInr = app.statutoryFeeInr !== undefined ? app.statutoryFeeInr : feeInfo.statutoryFeeInr;
+  const feeFormula = app.feeFormula || feeInfo.feeFormula;
+  const rtpsActClause = app.rtpsActClause || 'Right to Public Services Act — Auto-Escalation & ₹250/day SLA Delay Liability';
+
+  return { ...app, stage, formName, requirementType, statutoryBasis, routing, statutoryFeeInr, feeFormula, rtpsActClause };
 }
 
 export const KNOWLEDGE_BASE = [
@@ -466,5 +803,14 @@ export const KNOWLEDGE_BASE = [
     docs: ['Udyam Registration Certificate', 'Detailed Project Report (DPR)', 'Bank Sanction Letter', 'Machinery Invoices'],
     keywords: ['subsidy', 'subsidies', 'scheme', 'schemes', 'loan', 'grant', 'grants', 'support', 'pmegp', 'cgtmse', 'chhut', 'yojana', 'interest subsidy', 'gov-14'],
     statutoryBasis: 'Credit Linked Capital Subsidy Scheme & State Industrial Policy',
+  },
+  {
+    sourceRef: 'TND-15',
+    name: 'GeM & CPPP Government Procurement / Tender Matchmaker',
+    department: 'MSME',
+    slaDays: 1,
+    docs: ['Approved Statutory Licences & NOCs', 'Udyam Registration Certificate', 'GST Returns (GSTR-3B)', 'Audited Financial Statements'],
+    keywords: ['tender', 'tenders', 'gem', 'procurement', 'bid', 'bids', 'bidding', 'contract', 'contracts', 'government order', 'cppp', 'tnd-15'],
+    statutoryBasis: 'Public Procurement Policy for Micro and Small Enterprises (MSEs) Order, 2012 & GeM Special Provisions',
   },
 ];

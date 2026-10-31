@@ -7,6 +7,11 @@ import {
   STATUTORY_CATALOG,
   SCHEMES_CATALOG,
   evaluateEligibleSchemes,
+  computeStatutoryFee,
+  computeUrgencyScore,
+  calculateCriticalPath,
+  TENDERS_CATALOG,
+  evaluateGovernmentTenders,
 } from './statutoryEngine.js';
 import { myApplicationsCache } from '../mocks/applicantStore.js';
 import {
@@ -34,13 +39,21 @@ export {
   STATUTORY_CATALOG,
   SCHEMES_CATALOG,
   evaluateEligibleSchemes,
+  computeStatutoryFee,
+  computeUrgencyScore,
+  calculateCriticalPath,
+  TENDERS_CATALOG,
+  evaluateGovernmentTenders,
 };
 
 export const users = [
-  { id: '1', name: 'Alice Applicant', email: 'alice@applicant.com', role: 'applicant', department: 'Logistics', deskNo: 'A12' },
-  { id: '2', name: 'Bob Officer', email: 'gupta@officer.com', role: 'officer', department: 'Fire Dept', deskNo: '2' },
-  { id: '3', name: 'Charlie Admin', email: 'charlie@admin.com', role: 'admin', department: 'IT', deskNo: 'C56' },
-  { id: '4', name: 'Bob Officer', email: 'bob@officer.com', role: 'officer', department: 'Fire Dept', deskNo: '2' },
+  { id: 'u1', name: 'Aarav Mehta', email: 'applicant@demo.com', role: 'applicant', department: 'Textile Operations', deskNo: 'A12' },
+  { id: '1', name: 'Aarav Mehta', email: 'alice@applicant.com', role: 'applicant', department: 'Textile Operations', deskNo: 'A12' },
+  { id: 'u2', name: 'Vikramaditya Sinh', email: 'officer@demo.com', role: 'officer', department: 'Safety', deskNo: '2' },
+  { id: '2', name: 'Vikramaditya Sinh', email: 'gupta@officer.com', role: 'officer', department: 'Safety', deskNo: '2' },
+  { id: '4', name: 'Vikramaditya Sinh', email: 'bob@officer.com', role: 'officer', department: 'Safety', deskNo: '2' },
+  { id: 'u3', name: 'Rajeshwari Iyer, IAS', email: 'admin@demo.com', role: 'admin', department: 'Industries & Mines', deskNo: 'C56' },
+  { id: '3', name: 'Rajeshwari Iyer, IAS', email: 'charlie@admin.com', role: 'admin', department: 'Industries & Mines', deskNo: 'C56' },
 ];
 
 export function deriveApprovalMetadata(app, state = 'Gujarat') {
@@ -246,12 +259,32 @@ export const getMyApplicationsAPI = async () => {
   if (USE_MOCK) {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const schemes = evaluateEligibleSchemes(myApplicationsCache.applications[0] || {});
-        resolve({ data: { ...myApplicationsCache, schemes } });
+        const primaryUnit = myApplicationsCache.applications[0] || {};
+        const activeApprovals = primaryUnit.approvalRequests || [];
+        const schemes = evaluateEligibleSchemes(primaryUnit);
+        const tenderGate = evaluateGovernmentTenders(primaryUnit, activeApprovals);
+        resolve({ data: { ...myApplicationsCache, schemes, tenderGate } });
       }, 800);
     });
   }
   return api.get('/applications/mine');
+};
+
+export const unlockTendersDemoAPI = async () => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const app = myApplicationsCache.applications[0];
+        if (app?.approvalRequests) {
+          app.approvalRequests.forEach((r) => { r.status = 'approved'; });
+        }
+        officerStore.queue.forEach((q) => { if (q.id === 'req2') q.status = 'approved'; });
+        const tenderGate = evaluateGovernmentTenders(app, app?.approvalRequests || []);
+        resolve({ data: { success: true, tenderGate } });
+      }, 300);
+    });
+  }
+  return api.post('/applications/unlock-tenders-demo');
 };
 
 export const getApprovalAPI = async (id) => {
@@ -844,6 +877,25 @@ export const explainQueryAPI = async (note) => {
     });
   }
   return api.post('/ai/explain-query', { note });
+};
+
+export const getAuditIntegrityAPI = async () => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          data: {
+            ok: true,
+            intact: true,
+            totalApprovalsAudited: 8,
+            totalLogEntriesVerified: 18,
+            algorithm: 'SHA-256 Hash Chain',
+          },
+        });
+      }, 100);
+    });
+  }
+  return api.get('/admin/audit-integrity');
 };
 
 export const resetMockDataAPI = async () => {

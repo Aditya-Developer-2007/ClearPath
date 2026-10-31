@@ -1,8 +1,38 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const INITIAL_BUSINESSES = [
-  { id: 'b1', name: 'Textile unit, Surat', sector: 'Textile', city: 'Surat', state: 'Gujarat' },
-  { id: 'b2', name: 'Food Processing, Ahmedabad', sector: 'Food', city: 'Ahmedabad', state: 'Gujarat' },
+  {
+    id: 'b1',
+    name: 'Surya Vastra Mills Pvt. Ltd.',
+    sector: 'Textile',
+    city: 'Surat',
+    state: 'Gujarat',
+    address: 'Plot 14, GIDC Sachin, Surat',
+    pan: 'AABCS1429B',
+    gstin: '24AABCS1429B1Z5',
+    udyam: 'UDYAM-GJ-22-0048192',
+    unitSize: '500 sq.m',
+    investment: '30 Lakh',
+    investmentLakh: 30,
+    employees: 12,
+    hazardous: false,
+  },
+  {
+    id: 'b2',
+    name: 'Annapurna Agro Foods LLP',
+    sector: 'Food Processing',
+    city: 'Ahmedabad',
+    state: 'Gujarat',
+    address: 'Plot 408, Sanand GIDC Phase-II, Ahmedabad',
+    pan: 'AAJFA8821C',
+    gstin: '24AAJFA8821C1Z3',
+    udyam: 'UDYAM-GJ-01-0092144',
+    unitSize: '850 sq.m',
+    investment: '50 Lakh',
+    investmentLakh: 50,
+    employees: 18,
+    hazardous: false,
+  },
 ];
 
 const BusinessContext = createContext(null);
@@ -74,7 +104,6 @@ export const BusinessProvider = ({ children }) => {
   const deleteBusiness = (id) => {
     setBusinesses((prev) => {
       const updated = prev.filter((b) => b.id !== id);
-      // If the deleted business was active, select the first available one
       if (activeBusinessId === id) {
         setActiveBusinessId(updated.length > 0 ? updated[0].id : null);
       }

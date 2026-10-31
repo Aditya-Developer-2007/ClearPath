@@ -38,11 +38,11 @@ function Field({ label, id, type, value, onChange, placeholder, autoComplete }) 
   );
 }
 
-// ── Demo accounts ──────────────────────────────────────────────────────────
+// ── Authentic Indian Demo accounts ─────────────────────────────────────────
 const DEMO_ACCOUNTS = [
-  { label: 'Applicant', email: 'alice@applicant.com' },
-  { label: 'Officer',   email: 'bob@officer.com'     },
-  { label: 'Admin',     email: 'charlie@admin.com'   },
+  { label: 'Applicant (Aarav Mehta)', email: 'applicant@demo.com' },
+  { label: 'Officer (Vikramaditya Sinh)', email: 'officer@demo.com' },
+  { label: 'Admin (Rajeshwari Iyer, IAS)', email: 'admin@demo.com' },
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -86,11 +86,10 @@ export default function Login() {
 
     setLoading(true);
     try {
-      // Try matching a mock user by email; otherwise show backend-pending notice
       const { data } = await loginAPI(email.trim().toLowerCase());
       login(data.user, data.token);
       if (isRegister) {
-        showToast(`Welcome, ${data.user.name}! Demo mode — backend integration pending.`, 'success');
+        showToast(`Welcome, ${data.user.name}! Demo mode active.`, 'success');
         setTimeout(() => redirectAfterLogin(data.user), 1000);
       } else {
         redirectAfterLogin(data.user);
@@ -98,8 +97,8 @@ export default function Login() {
     } catch {
       showToast(
         isLogin
-          ? 'No account found for that email. Backend integration is pending — try a demo account below.'
-          : 'Registration coming soon! Backend integration is pending. Use a demo account below to explore.'
+          ? 'No account found for that email. Use a quick demo account below to explore.'
+          : 'Registration coming soon! Use a demo account below to explore.'
       );
     } finally {
       setLoading(false);
@@ -189,7 +188,7 @@ export default function Login() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Aditya Saini"
+                placeholder="Aarav Mehta"
                 autoComplete="name"
               />
             )}
@@ -264,7 +263,7 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Demoted ghost demo buttons */}
+          {/* Quick demo buttons */}
           <div className="space-y-2">
             {DEMO_ACCOUNTS.map((acc) => (
               <button
@@ -272,7 +271,7 @@ export default function Login() {
                 type="button"
                 onClick={() => handleDemoLogin(acc.email)}
                 disabled={loading}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-500 rounded-lg py-2 text-xs font-medium hover:bg-slate-100 hover:border-slate-300 hover:text-slate-700 active:scale-[0.98] transition-all duration-100 disabled:opacity-50"
+                className="w-full bg-slate-50 border border-slate-200 text-slate-600 rounded-lg py-2 text-xs font-semibold hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900 active:scale-[0.98] transition-all duration-100 disabled:opacity-50"
               >
                 Demo: {acc.label}
               </button>
@@ -282,7 +281,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-[11px] text-slate-400 mt-6 leading-relaxed">
-          This is a demo environment. Real authentication is not yet active.
+          ClearPath Industrial Single Window &amp; Statutory Governance System.
         </p>
 
       </div>

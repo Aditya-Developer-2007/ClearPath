@@ -1,18 +1,31 @@
 import express from 'express';
-import { getDB, saveDB, resetDB } from '../store/db.js';
+import { getDB, saveDB, resetDB, verifyAuditChainContinuity, appendActivityLog } from '../store/db.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-const SENIOR_OFFICERS = {
-  'Fire Dept': 'S. Verma',
-  Environment: 'P. Rao',
-  Labour: 'K. Iyer',
-  Industrial: 'M. Shah',
-  Utilities: 'D. Nair',
+export const SENIOR_OFFICERS = {
+  'Fire Dept': 'Director, State Fire & Emergency Services',
+  Safety: 'Director, State Fire & Emergency Services',
+  Environment: 'Member Secretary, State PCB',
+  Industrial: 'Chief Inspector of Factories (DISH)',
+  Labour: 'Additional Labour Commissioner',
+  Utilities: 'Chief Engineer (Commercial), State DISCOM',
+  MSME: 'Joint Director of Industries (MSME)',
+  Finance: 'Joint Commissioner of State Tax',
 };
 
-// GET /api/admin/analytics — Dynamic governance analytics
+// GET /api/admin/audit-integrity — Cryptographic audit chain verification
+router.get('/audit-integrity', protect, (req, res) => {
+  try {
+    const auditResult = verifyAuditChainContinuity();
+    res.json(auditResult);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/admin/analytics — Dynamic governance analytics with deep statutory telemetry
 router.get('/analytics', protect, (req, res) => {
   try {
     const db = getDB();
@@ -37,13 +50,14 @@ router.get('/analytics', protect, (req, res) => {
           reqsMap.set(r.id, {
             id: r.id,
             name: r.name,
-            applicantName: 'Alice Applicant',
+            applicantName: 'Aarav Mehta',
             unitName: `${app.sector}, ${app.city}`,
             department: r.department,
             status: r.status,
             slaDeadline: r.slaDeadline || new Date(Date.now() + (r.slaDays || 21) * 86400000).toISOString(),
             escalated: r.escalated,
             lastActionAt: r.lastActionAt,
+            statutoryFeeInr: r.statutoryFeeInr,
           });
         }
       });
@@ -62,7 +76,7 @@ router.get('/analytics', protect, (req, res) => {
 
     const depts = ['Fire Dept', 'Environment', 'Industrial', 'Utilities', 'Labour'];
     const byDepartment = depts.map((dept) => {
-      const deptAll = allReqs.filter((r) => r.department === dept);
+      const deptAll = allReqs.filter((r) => r.department === dept || (dept === 'Fire Dept' && r.department === 'Safety'));
       const deptOpen = deptAll.filter((r) => !['approved', 'rejected'].includes(r.status));
       const deptBreaches = deptOpen.filter((r) => new Date(r.slaDeadline) < currentNow).length;
 
@@ -90,7 +104,7 @@ router.get('/analytics', protect, (req, res) => {
       return {
         id: r.id,
         name: r.name,
-        applicantName: r.applicantName || 'Alice Applicant',
+        applicantName: r.applicantName || 'Aarav Mehta',
         dept: r.department || 'General',
         daysTaken,
         overdueDays,
@@ -101,11 +115,26 @@ router.get('/analytics', protect, (req, res) => {
       return b.daysTaken - a.daysTaken;
     });
 
+    let totalStatutoryFeesTracked = 0;
+    allReqs.forEach((r) => {
+      totalStatutoryFeesTracked += Number(r.statutoryFeeInr) || 0;
+    });
+
+    let combinedInspectionsSaved = 0;
+    (db.inspections || []).forEach((insp) => {
+      combinedInspectionsSaved += Number(insp.visitsSaved) || 0;
+    });
+
+    const auditIntegrity = verifyAuditChainContinuity();
+
     res.json({
       totals,
       byDepartment,
       slowest,
       escalationCount: totals.escalations,
+      totalStatutoryFeesTracked,
+      combinedInspectionsSaved,
+      auditIntegrity,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -139,7 +168,7 @@ router.post('/fast-forward', protect, (req, res) => {
       const isAlreadyEscalated = (queueRow && queueRow.escalated) || (cacheReq && cacheReq.escalated);
       if (isAlreadyEscalated) return false;
 
-      const dept = department || queueRow?.department || cacheReq?.department || 'Fire Dept';
+      const dept = department || queueRow?.department || cacheReq?.department || 'Safety';
       const officerName = SENIOR_OFFICERS[dept] || 'Senior Officer';
       const assignedOfficerTitle = `${officerName}, Senior Officer, ${dept}`;
       const nowIso = new Date().toISOString();
@@ -154,8 +183,7 @@ router.post('/fast-forward', protect, (req, res) => {
         cacheReq.assignedOfficerName = assignedOfficerTitle;
       }
 
-      if (!db.activityLogs[id]) db.activityLogs[id] = [];
-      db.activityLogs[id].push({
+      appendActivityLog(id, {
         action: 'Escalated to Senior Officer (SLA breached)',
         by: 'System',
         timestamp: nowIso,
@@ -256,7 +284,11 @@ router.post('/inspections/schedule', protect, (req, res) => {
       proposal.proposedDate = slotDate;
     }
 
-    if (proposal.applicantName === 'Alice Applicant' || proposal.approvalRequestIds.includes('req2')) {
+    if (
+      proposal.applicantName === 'Aarav Mehta' ||
+      proposal.applicantName === 'Alice Applicant' ||
+      proposal.approvalRequestIds.includes('req2')
+    ) {
       if (db.applications[0]) {
         db.applications[0].scheduledInspection = {
           id: proposal.id,
@@ -284,4 +316,3 @@ router.post('/reset', protect, (req, res) => {
 });
 
 export default router;
-

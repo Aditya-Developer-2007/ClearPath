@@ -1,6 +1,8 @@
 import express from 'express';
-import { getDB, saveDB, getApprovalComposite, updateApprovalStatus } from '../store/db.js';
+import { getDB, saveDB, getApprovalComposite, updateApprovalStatus, appendActivityLog } from '../store/db.js';
 import { DEMO_PROFILE_ADDRESS } from '../store/seedData.js';
+import { computeUrgencyScore } from '../engine/statutoryEngine.js';
+import { verifyDocumentSubmission } from '../engine/verificationEngine.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -15,18 +17,53 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET /api/approvals/queue — Officer Review Queue
-// MUST be registered before /:id so Express does not capture "queue" as an ID
+// GET /api/approvals/queue — Officer Review Queue with deterministic RTPS Urgency Scoring
 router.get('/queue', protect, (req, res) => {
   try {
     const db = getDB();
-    res.json(db.queue.map((r) => ({ ...r })));
+    const currentNow = new Date();
+
+    const computedQueue = db.queue.map((row) => {
+      const docs = db.documents[row.id] || [];
+      const warningsCount = row.warningsCount !== undefined
+        ? row.warningsCount
+        : docs.reduce((acc, d) => acc + (d.warnings?.length || 0), 0);
+
+      const urgencyScore = computeUrgencyScore({ ...row, warningsCount });
+      return {
+        ...row,
+        warningsCount,
+        urgencyScore,
+      };
+    });
+
+    // Sort deterministically:
+    // 1. Escalated / overdue first
+    // 2. Highest urgencyScore
+    // 3. Earliest slaDeadline
+    // 4. Stable ID tie-breaker
+    computedQueue.sort((a, b) => {
+      const aOverdue = new Date(a.slaDeadline) < currentNow;
+      const bOverdue = new Date(b.slaDeadline) < currentNow;
+
+      if (a.escalated !== b.escalated) return (b.escalated ? 1 : 0) - (a.escalated ? 1 : 0);
+      if (aOverdue !== bOverdue) return (bOverdue ? 1 : 0) - (aOverdue ? 1 : 0);
+      if (b.urgencyScore !== a.urgencyScore) return b.urgencyScore - a.urgencyScore;
+
+      const aTime = a.slaDeadline ? new Date(a.slaDeadline).getTime() : 0;
+      const bTime = b.slaDeadline ? new Date(b.slaDeadline).getTime() : 0;
+      if (aTime !== bTime) return aTime - bTime;
+
+      return String(a.id).localeCompare(String(b.id));
+    });
+
+    res.json(computedQueue);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET /api/approvals/:id — Approval request details (for both Applicant & Officer views)
+// GET /api/approvals/:id — Approval request details
 router.get('/:id', protect, (req, res) => {
   try {
     const composite = getApprovalComposite(req.params.id);
@@ -39,27 +76,31 @@ router.get('/:id', protect, (req, res) => {
   }
 });
 
-// POST /api/approvals/:id/documents — Document upload & consistency verification
-router.post('/:id/documents', protect, (req, res) => {
+// Handler for document check & upload
+const handleDocumentUpload = (req, res) => {
   try {
     const { id } = req.params;
     const { docType, fileName, declaredFields } = req.body;
     const db = getDB();
 
-    const normalizedDeclared = declaredFields?.address?.trim().toLowerCase();
-    const normalizedTarget = DEMO_PROFILE_ADDRESS.trim().toLowerCase();
-    const hasMismatch = docType === 'Lease Deed' && normalizedDeclared && normalizedDeclared !== normalizedTarget;
+    const composite = getApprovalComposite(id);
+    const masterProfile = composite?.applicantProfile || db.applicantProfiles[id] || db.businesses[0] || {
+      address: DEMO_PROFILE_ADDRESS,
+      pan: 'AABCS1429B',
+    };
+    const existingDocs = db.documents[id] || [];
 
-    const warnings = hasMismatch
-      ? [
-          {
-            field: 'Business Address',
-            doc1: 'Application form',
-            doc2: 'Lease deed',
-            note: 'Address on the lease deed differs from your application. Fix it before submitting.',
-          },
-        ]
-      : [];
+    const verification = verifyDocumentSubmission(
+      composite,
+      docType,
+      fileName,
+      declaredFields,
+      masterProfile,
+      existingDocs
+    );
+
+    const warnings = verification.warnings;
+    const docHash = verification.docHash;
 
     const docRecord = {
       id: `doc-${Date.now()}-${docType.toLowerCase().replace(/\s+/g, '-')}`,
@@ -69,8 +110,9 @@ router.post('/:id/documents', protect, (req, res) => {
       validated: warnings.length === 0,
       declaredFields: declaredFields
         ? { ...declaredFields }
-        : { address: DEMO_PROFILE_ADDRESS, pan: 'ABCDE1234F', unitSize: '1500 sqft' },
+        : { address: masterProfile.address || DEMO_PROFILE_ADDRESS, pan: masterProfile.pan || 'AABCS1429B', unitSize: '500 sq.m' },
       warnings,
+      docHash,
     };
 
     if (!db.documents[id]) db.documents[id] = [];
@@ -89,31 +131,33 @@ router.post('/:id/documents', protect, (req, res) => {
     saveDB();
 
     res.json({
+      ok: warnings.length === 0,
       document: docRecord,
       warnings,
+      docHash,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
+};
+
+// POST /api/approvals/:id/documents & POST /api/approvals/:id/check-doc
+router.post('/:id/documents', protect, handleDocumentUpload);
+router.post('/:id/check-doc', protect, handleDocumentUpload);
 
 // POST /api/approvals/:id/submit — Submit approval application to officer queue
 router.post('/:id/submit', protect, (req, res) => {
   try {
     const { id } = req.params;
-    const db = getDB();
 
     updateApprovalStatus(id, 'submitted');
 
-    if (!db.activityLogs[id]) db.activityLogs[id] = [];
-    db.activityLogs[id].push({
+    appendActivityLog(id, {
       action: 'Submitted for Review',
-      by: req.user?.name || 'Applicant',
-      timestamp: new Date().toISOString(),
-      note: 'All required documents submitted',
+      by: req.user?.name || 'Aarav Mehta',
+      note: 'All required documents submitted with statutory declaration',
     });
 
-    saveDB();
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -127,7 +171,7 @@ router.patch('/:id/action', protect, (req, res) => {
     const { action, note, officerName, msgId } = req.body;
     const db = getDB();
     const ts = new Date().toISOString();
-    const byOfficer = officerName || req.user?.name || 'Bob Officer';
+    const byOfficer = officerName || req.user?.name || 'Vikramaditya Sinh';
 
     const statusMap = {
       approve: 'approved',
@@ -136,17 +180,15 @@ router.patch('/:id/action', protect, (req, res) => {
     };
     const newStatus = statusMap[action] || 'submitted';
 
-    updateApprovalStatus(id, newStatus);
+    updateApprovalStatus(id, newStatus, { assignedOfficerName: byOfficer });
 
     const actionLabels = { approve: 'Approved', reject: 'Rejected', query: 'Query Raised' };
-    const logEntry = {
+    appendActivityLog(id, {
       action: actionLabels[action] || action,
       by: byOfficer,
       timestamp: ts,
       note: note || '',
-    };
-    if (!db.activityLogs[id]) db.activityLogs[id] = [];
-    db.activityLogs[id].push(logEntry);
+    });
 
     if (action === 'query' && note) {
       const queryMsgId = msgId || `msg-q-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
@@ -162,16 +204,18 @@ router.patch('/:id/action', protect, (req, res) => {
       if (!exists) {
         db.messages[id].push(queryMsg);
       }
+      saveDB();
     }
 
-    saveDB();
+    const qRow = db.queue.find((r) => r.id === id);
 
     res.json({
       id,
       status: newStatus,
       lastActionAt: ts,
       activityLog: db.activityLogs[id],
-      messages: db.messages[id],
+      messages: db.messages[id] || [],
+      certificateMeta: qRow?.certificateMeta || null,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -197,7 +241,7 @@ router.post('/:id/messages', protect, (req, res) => {
     const db = getDB();
 
     const role = senderRole || req.user?.role || 'applicant';
-    const name = senderName || req.user?.name || (role === 'officer' ? 'Bob Officer' : 'You');
+    const name = senderName || req.user?.name || (role === 'officer' ? 'Vikramaditya Sinh' : 'Aarav Mehta');
     const msgId = customMsgId || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
     const newMsg = {

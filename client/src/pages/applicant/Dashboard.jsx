@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { getMyApplicationsAPI, deriveApprovalMetadata, getStatePortalBadge, generateApprovalsForBusiness, evaluateEligibleSchemes } from '../../lib/api';
+import { getMyApplicationsAPI, deriveApprovalMetadata, getStatePortalBadge, generateApprovalsForBusiness, evaluateEligibleSchemes, evaluateGovernmentTenders } from '../../lib/api';
 import useSharedTimer from '../../hooks/useSharedTimer';
 import { useBusiness } from '../../context/BusinessContext';
 import EmptyState from '../../components/EmptyState';
 import SkeletonCard from '../../components/SkeletonCard';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
-import { ShieldAlert, Info, Play, Eye, MessageSquareReply, CheckCircle2, Building2, ChevronDown, Plus, Clock, AlertTriangle, ShieldCheck, Activity, Check, Circle, AlertCircle, FileCheck2, UserRound } from 'lucide-react';
+import { ShieldAlert, Info, Play, Eye, MessageSquareReply, CheckCircle2, Building2, ChevronDown, Plus, Clock, AlertTriangle, ShieldCheck, Activity, Check, Circle, AlertCircle, FileCheck2, UserRound, Lock, Unlock, Briefcase, ExternalLink, X } from 'lucide-react';
 
 function bucketOf(r, now) {
   if (r.status === 'approved') {
@@ -38,10 +38,19 @@ export default function ApplicantDashboard() {
   const navigate = useNavigate();
   const { setAlerts } = useOutletContext() || {};
   const [schemesExpanded, setSchemesExpanded] = useState(true);
+  const [tendersExpanded, setTendersExpanded] = useState(true);
+  const [selectedBidTender, setSelectedBidTender] = useState(null);
+  const [bidNotification, setBidNotification] = useState(null);
 
   const schemes = useMemo(() => {
     const unit = activeBusiness || data || { sector: 'Textile', city: 'Surat', investmentLakh: 30, employees: 12 };
     return evaluateEligibleSchemes(unit);
+  }, [activeBusiness, data]);
+
+  const tenderGate = useMemo(() => {
+    const unit = activeBusiness || data || { sector: 'Textile', city: 'Surat', investmentLakh: 30, employees: 12 };
+    const approvals = data?.approvalRequests || [];
+    return evaluateGovernmentTenders(unit, approvals);
   }, [activeBusiness, data]);
 
   useEffect(() => {
@@ -618,6 +627,298 @@ export default function ApplicantDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Compliance-Gated Government Procurement & GeM Tenders */}
+        {tenderGate.tenders && tenderGate.tenders.length > 0 && (
+          <div className="mt-8 bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="p-1.5 bg-slate-900 text-white rounded-lg">
+                    <Briefcase size={16} />
+                  </div>
+                  <h3 className="font-bold text-base text-slate-900 tracking-tight">
+                    Government Procurement &amp; GeM Tenders
+                  </h3>
+                  <span className="px-2 py-0.5 text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200 rounded-md">
+                    {tenderGate.tenders.length} Matched
+                  </span>
+                  {tenderGate.isUnlocked ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      <Unlock size={12} className="text-emerald-600" />
+                      COMPLIANCE VERIFIED — BIDDING UNLOCKED
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                      <Lock size={12} className="text-amber-600" />
+                      GATE LOCKED — STATUTORY CLEARANCES REQUIRED
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Sector-matched PSU &amp; State Government procurement contracts under Public Procurement Policy for MSEs.
+                </p>
+              </div>
+              <button
+                onClick={() => setTendersExpanded(!tendersExpanded)}
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all duration-75 shrink-0 flex items-center gap-1.5 self-start sm:self-auto"
+              >
+                {tendersExpanded ? 'Collapse' : 'View Tenders'}
+                <ChevronDown size={14} className={`transform transition-transform duration-200 ${tendersExpanded ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {tendersExpanded && (
+              <div className="mt-5 space-y-5">
+                {/* Compliance Gate Status Card */}
+                <div className={`p-4 rounded-xl border ${
+                  tenderGate.isUnlocked 
+                    ? 'bg-emerald-50/40 border-emerald-200/80 text-emerald-950' 
+                    : 'bg-amber-50/40 border-amber-200/80 text-amber-950'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      {tenderGate.isUnlocked ? (
+                        <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                      ) : (
+                        <Lock size={18} className="text-amber-600 shrink-0" />
+                      )}
+                      <span className="font-bold text-sm">
+                        {tenderGate.isUnlocked 
+                          ? '100% Statutory Clearance Verified: Ready for Direct GeM Bidding' 
+                          : 'Rule 144(xi) GFR Statutory Gate: 100% Approvals Required to Unlock Tenders'}
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-white/80 border border-slate-200/60 text-slate-700">
+                      {tenderGate.approvedCount} of {tenderGate.totalApprovals} Approvals Verified ({tenderGate.totalApprovals > 0 ? Math.round((tenderGate.approvedCount / tenderGate.totalApprovals) * 100) : 0}%)
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-slate-200/80 rounded-full h-2 overflow-hidden mb-3">
+                    <div
+                      className={`h-full transition-all duration-500 rounded-full ${
+                        tenderGate.isUnlocked ? 'bg-emerald-600' : 'bg-amber-500'
+                      }`}
+                      style={{
+                        width: `${tenderGate.totalApprovals > 0 ? (tenderGate.approvedCount / tenderGate.totalApprovals) * 100 : 0}%`
+                      }}
+                    />
+                  </div>
+
+                  {/* Context notice & blocking items */}
+                  {tenderGate.isUnlocked ? (
+                    <p className="text-xs text-emerald-800 leading-relaxed">
+                      All required statutory clearances (Fire Safety NOC, Factory Licence, Pollution Consents, Labour Registrations) are verified active. Your unit is eligible to submit bids directly via the GeM encrypted bid vault with MSE Purchase Preference.
+                    </p>
+                  ) : (
+                    <div>
+                      <p className="text-xs text-amber-900 leading-relaxed mb-3">
+                        Public sector buyers mandate all statutory compliance clearances prior to bid acceptance. Complete the remaining <span className="font-bold font-mono">{tenderGate.pendingCount}</span> approvals to unlock bidding and generate verified submission packages:
+                      </p>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">
+                          Action Required:
+                        </span>
+                        {tenderGate.blockingApprovals.map((b) => (
+                          <button
+                            key={b.id}
+                            onClick={() => navigate(`/app/workspace/${b.id}`)}
+                            title={`Click to open ${b.name}`}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white border border-amber-300/80 text-amber-900 hover:bg-amber-100 hover:border-amber-400 transition-all shadow-2xs group"
+                          >
+                            <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                              {b.code}
+                            </span>
+                            <span className="font-medium truncate max-w-[200px]">{b.name}</span>
+                            <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-amber-800">
+                              ({b.status.replace('_', ' ')}) &rarr;
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tenders Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {tenderGate.tenders.map((tender) => (
+                    <div
+                      key={tender.id}
+                      className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-5 flex flex-col justify-between hover:border-slate-300 transition-all duration-150"
+                    >
+                      <div>
+                        {/* Top badges */}
+                        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-white bg-slate-900 px-2 py-0.5 rounded">
+                              {tender.id}
+                            </span>
+                            <span className="font-mono text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                              {tender.portal}
+                            </span>
+                          </div>
+                          <span className="font-mono text-xs text-slate-500 flex items-center gap-1">
+                            <Clock size={12} />
+                            {tender.bidWindow || `${tender.bidWindowDays}d left`}
+                          </span>
+                        </div>
+
+                        {/* Title & Department */}
+                        <h4 className="font-headings font-bold text-sm sm:text-base text-slate-900 mb-1.5 tracking-tight">
+                          {tender.title}
+                        </h4>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
+                          <Building2 size={13} className="shrink-0 text-slate-400" />
+                          <span className="truncate">{tender.issuingAuthority}</span>
+                        </div>
+
+                        {/* Key Attributes Grid */}
+                        <div className="bg-white border border-slate-200/70 rounded-lg p-3 text-xs grid grid-cols-2 gap-2 mb-3">
+                          <div>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Estimated Value</span>
+                            <span className="font-mono font-bold text-slate-900 text-sm">{tender.estimatedValue}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Portal Reference</span>
+                            <span className="font-mono text-slate-700 font-semibold truncate block">{tender.portalRef}</span>
+                          </div>
+                          <div className="col-span-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">MSE Benefit</span>
+                            <span className="text-emerald-700 font-bold text-[11px] flex items-center gap-1">
+                              <CheckCircle2 size={12} />
+                              {tender.emdExemption ? 'EMD Exempt (MSE Policy)' : 'Standard EMD'}
+                            </span>
+                          </div>
+                          <div className="col-span-2 pt-1 border-t border-slate-100">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Statutory Prerequisite</span>
+                            <span className="text-[11px] text-slate-600 line-clamp-1">{tender.prerequisite}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <div>
+                        {tenderGate.isUnlocked ? (
+                          <button
+                            onClick={() => setSelectedBidTender(tender)}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-all active:scale-[0.98]"
+                          >
+                            <ExternalLink size={14} />
+                            Participate via GeM Portal
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed border border-slate-200/80"
+                          >
+                            <Lock size={13} />
+                            Locked — Complete {tenderGate.pendingCount} Pending Approvals to Bid
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Bid Package Modal */}
+        {selectedBidTender && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-teal-50 text-teal-700 rounded-lg border border-teal-200">
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900">GeM Bid Package Verified</h3>
+                    <p className="font-mono text-xs text-slate-500">{selectedBidTender.portalRef}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedBidTender(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="py-4 space-y-4 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Target Contract</span>
+                  <p className="font-bold text-slate-900 text-sm">{selectedBidTender.title}</p>
+                  <p className="text-slate-600 mt-0.5">{selectedBidTender.issuingAuthority} • Value: <span className="font-mono font-bold text-slate-900">{selectedBidTender.estimatedValue}</span></p>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2.5">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                    Attached Statutory Credentials (Verified)
+                  </span>
+                  <div className="space-y-1.5 font-mono text-[11px]">
+                    <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-slate-200/60">
+                      <span className="text-slate-800">NOC-SAFE-2026-REQ2 (Fire Safety NOC)</span>
+                      <span className="text-emerald-700 font-bold flex items-center gap-1"><CheckCircle2 size={12} /> Active</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-slate-200/60">
+                      <span className="text-slate-800">LIC-FACT-2026-REQ1 (Factories Act Licence)</span>
+                      <span className="text-emerald-700 font-bold flex items-center gap-1"><CheckCircle2 size={12} /> Active</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-slate-200/60">
+                      <span className="text-slate-800">CTE-PCB-2026-REQ3 (GPCB Pollution Consent)</span>
+                      <span className="text-emerald-700 font-bold flex items-center gap-1"><CheckCircle2 size={12} /> Active</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-teal-50/70 border border-teal-200/80 rounded-xl p-3.5 space-y-1.5">
+                  <span className="text-[10px] text-teal-800 font-bold uppercase tracking-wider block">
+                    MSE Preferential Benefits Applied
+                  </span>
+                  <p className="text-teal-900 text-[11px] leading-relaxed">
+                    Under the Public Procurement Policy for MSEs Order (2012), this bid is submitted with <strong>100% EMD Exemption</strong> and registered for the <strong>25% MSE Purchase Preference Allocation</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setSelectedBidTender(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    const tender = selectedBidTender;
+                    setSelectedBidTender(null);
+                    setBidNotification(`Bid package for ${tender.id} successfully generated with verified statutory NOC certificates.`);
+                    setTimeout(() => setBidNotification(null), 5000);
+                  }}
+                  className="px-4 py-2 text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white rounded-lg shadow-sm transition-all"
+                >
+                  Export &amp; Proceed to GeM
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bid Toast / Notification */}
+        {bidNotification && (
+          <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-slate-700 animate-in slide-in-from-bottom-2 duration-200 text-xs font-medium">
+            <CheckCircle2 size={16} className="text-teal-400 shrink-0" />
+            <span>{bidNotification}</span>
+            <button onClick={() => setBidNotification(null)} className="ml-2 text-slate-400 hover:text-white">
+              <X size={14} />
+            </button>
           </div>
         )}
       </div>
