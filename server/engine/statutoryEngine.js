@@ -1,50 +1,110 @@
 // ── ClearPath Indian Statutory Rule Engine (Single Source of Truth) ─────────
 // Grounded in Indian Federal & State Regulatory Acts:
 // - MSMED Act 2006, CGST Act 2017 & State PT Acts
-// - State Fire Prevention & Life Safety Measures Acts
-// - Water (Prevention & Control of Pollution) Act 1974 & Air Act 1981 (CPCB)
+// - State Fire Prevention & Life Safety Measures Acts & NBC 2016 Part-4
+// - Water (Prevention & Control of Pollution) Act 1974 & Air Act 1981 (CPCB / SPCB)
 // - The Factories Act, 1948 (Sections 2m & 6)
 // - State Shops & Commercial Establishments Acts / CLRA 1970 / OSH Code
-// - The Electricity Act, 2003 (Section 43)
-// - Food Safety & Standards Act, 2006 (Section 31)
-// - Hazardous & Other Wastes (M&TM) Rules, 2016
-// - Indian Boilers Act, 1923
-// - PMEGP, CGTMSE & State Industrial Policy Subsidies
-// - Right to Public Services (RTPS) Act Timelines & Statutory Guarantee
+// - The Electricity Act, 2003 (Section 43) & CEA Safety Regulations, 2023
+// - Food Safety & Standards Act, 2006 (Section 31 — FoSCoS)
+// - Legal Metrology Act, 2009 (Section 24) & Packaged Commodities Rules 2011 (LMPC)
+// - Hazardous & Other Wastes (M&TM) Rules, 2016 & MSIHC Rules, 1989
+// - Petroleum Act, 1934 & SMPV(U) Rules, 2016 (PESO)
+// - Drugs and Cosmetics Act, 1940 & Schedule M (CDSCO / State FDA)
+// - E-Waste Management Rules, 2022 & BIS Act, 2016 (CPCB EPR)
+// - Motor Vehicles Act, 1988 & CMVR Rule 126 (AIS-156 EV Homologation — ARAI/ICAT)
+// - Indian Telegraph Act / Telecom Act, 2023 (DoT Saral Sanchar OSP)
+// - Indian Boilers Act, 1923 (Section 7)
+// - PMEGP, CGTMSE, National PLI & State Industrial Policy Subsidies
+// - State Right to Public Services (RTPS) Acts (Gujarat Jan Seva, MAITRI, TG-iPASS, etc.)
 // - Public Procurement Policy for MSEs Order, 2012 (GeM & CPPP Tenders)
 
-export function getStatePortalBadge(state) {
-  const s = (state || '').toLowerCase();
-  if (s.includes('gujarat') || s.includes('surat') || s.includes('ahmedabad') || s.includes('vadodara') || s.includes('rajkot')) {
-    return 'Routed via Investor Facilitation Portal (IFP Gujarat)';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DATASET_PATH = path.join(__dirname, '../data/statutoryDataset.json');
+
+// Load structured production dataset directly from server/data/statutoryDataset.json
+const rawDataset = JSON.parse(fs.readFileSync(DATASET_PATH, 'utf8'));
+
+// ── 1. Real Indian States & Single Window Systems (10 States) ───────────────
+export const STATE_PORTALS = rawDataset.states;
+
+export function resolveState(stateInput = '', cityInput = '') {
+  const s = String(stateInput || '').toLowerCase().trim();
+  const c = String(cityInput || '').toLowerCase().trim();
+
+  // 1. Direct city match across portals
+  for (const [stName, stConfig] of Object.entries(STATE_PORTALS)) {
+    if (stConfig.cities.some((cityName) => c.includes(cityName.toLowerCase()) || cityName.toLowerCase() === c)) {
+      return stName;
+    }
   }
-  if (s.includes('maharashtra') || s.includes('mumbai') || s.includes('pune')) {
-    return 'Routed via MAITRI 2.0 Single Window';
+
+  // 2. Direct state name match
+  for (const stName of Object.keys(STATE_PORTALS)) {
+    const stLower = stName.toLowerCase();
+    if (s.includes(stLower) || stLower.includes(s)) {
+      return stName;
+    }
   }
-  if (s.includes('uttar pradesh') || s.includes('up') || s.includes('noida') || s.includes('kanpur') || s.includes('lucknow')) {
-    return 'Routed via Nivesh Mitra 3.0';
-  }
-  if (s.includes('tamil nadu') || s.includes('tn') || s.includes('chennai') || s.includes('coimbatore')) {
-    return 'Routed via TNSWP Single Window';
+
+  // 3. Fallback heuristics for abbreviations / aliases
+  if (s.includes('up') || s.includes('uttar')) return 'Uttar Pradesh';
+  if (s.includes('mh') || s.includes('maharashtra') || c.includes('mumbai') || c.includes('pune')) return 'Maharashtra';
+  if (s.includes('tn') || s.includes('tamil') || c.includes('chennai')) return 'Tamil Nadu';
+  if (s.includes('ka') || s.includes('karnataka') || c.includes('bengaluru') || c.includes('bangalore')) return 'Karnataka';
+  if (s.includes('tg') || s.includes('telangana') || c.includes('hyderabad')) return 'Telangana';
+  if (s.includes('hr') || s.includes('haryana') || c.includes('gurgaon') || c.includes('gurugram')) return 'Haryana';
+  if (s.includes('rj') || s.includes('rajasthan') || c.includes('jaipur')) return 'Rajasthan';
+  if (s.includes('uk') || s.includes('uttarakhand') || c.includes('haridwar') || c.includes('dehradun')) return 'Uttarakhand';
+  if (s.includes('dl') || s.includes('delhi')) return 'Delhi';
+
+  return 'Gujarat';
+}
+
+export function getStatePortalBadge(state, city) {
+  const normState = resolveState(state, city);
+  const portal = STATE_PORTALS[normState];
+  if (portal) {
+    return `Routed via ${portal.portalName}`;
   }
   return 'Routed via National Single Window System (NSWS)';
 }
 
+export function getStateConfig(state, city) {
+  const normState = resolveState(state, city);
+  return STATE_PORTALS[normState] || STATE_PORTALS.Gujarat;
+}
+
+// ── 2. Booming Industrial Sectors Catalog (8 Booming Sectors) ───────────────
+export const SECTORS_CATALOG = rawDataset.sectors;
+
 export function normalizeBusinessInput(input = {}) {
-  const rawSector = (input.sector || '').toLowerCase();
-  let sector = 'manufacturing';
-  if (rawSector.includes('textile')) {
-    sector = 'textile';
-  } else if (rawSector.includes('food')) {
-    sector = 'food';
-  } else if (rawSector.includes('chem')) {
-    sector = 'chemical';
-  } else if (rawSector.includes('elect')) {
+  const rawSector = String(input.sector || '').toLowerCase().trim();
+  let sector = 'textile';
+
+  if (rawSector.includes('auto') || rawSector.includes('ev') || rawSector.includes('vehicle') || rawSector.includes('battery') || rawSector.includes('motor') || rawSector.includes('engineering')) {
+    sector = 'automotive';
+  } else if (rawSector.includes('elect') || rawSector.includes('pcb') || rawSector.includes('semiconductor') || rawSector.includes('chip') || rawSector.includes('hardware')) {
     sector = 'electronics';
-  } else if (rawSector.includes('pharma')) {
+  } else if (rawSector.includes('renew') || rawSector.includes('solar') || rawSector.includes('wind') || rawSector.includes('hydrogen') || rawSector.includes('clean energy')) {
+    sector = 'renewable';
+  } else if (rawSector.includes('pharma') || rawSector.includes('drug') || rawSector.includes('api') || rawSector.includes('biotech') || rawSector.includes('medicine')) {
     sector = 'pharma';
-  } else if (rawSector.includes('engineer') || rawSector.includes('manuf')) {
-    sector = 'manufacturing';
+  } else if (rawSector.includes('chem') || rawSector.includes('solvent') || rawSector.includes('resin') || rawSector.includes('polymer')) {
+    sector = 'chemical';
+  } else if (rawSector.includes('food') || rawSector.includes('agro') || rawSector.includes('dairy') || rawSector.includes('spice') || rawSector.includes('cold chain') || rawSector.includes('beverage')) {
+    sector = 'food';
+  } else if (rawSector.includes('textile') || rawSector.includes('garment') || rawSector.includes('apparel') || rawSector.includes('fabric') || rawSector.includes('spinning') || rawSector.includes('yarn')) {
+    sector = 'textile';
+  } else if (rawSector.includes('data') || rawSector.includes('datacenter') || rawSector.includes('cloud') || rawSector.includes('server') || rawSector.includes('it infra')) {
+    sector = 'datacenter';
+  } else if (rawSector.includes('manuf')) {
+    sector = 'electronics';
   }
 
   let employees = 12;
@@ -67,156 +127,160 @@ export function normalizeBusinessInput(input = {}) {
     }
   }
 
-  const hazardous = input.hazardous === true || sector === 'chemical';
+  const hazardous = input.hazardous === true || sector === 'chemical' || sector === 'pharma';
 
-  const rawCity = (input.city || '').toLowerCase();
-  const rawState = (input.state || '').toLowerCase();
-  let state = 'Gujarat';
-  if (rawState.includes('maharashtra') || rawCity.includes('mumbai') || rawCity.includes('pune')) {
-    state = 'Maharashtra';
-  } else if (rawState.includes('uttar pradesh') || rawState.includes('up') || rawCity.includes('noida') || rawCity.includes('kanpur') || rawCity.includes('lucknow')) {
-    state = 'Uttar Pradesh';
-  } else if (rawState.includes('tamil nadu') || rawState.includes('tn') || rawCity.includes('chennai') || rawCity.includes('coimbatore')) {
-    state = 'Tamil Nadu';
-  } else if (rawState.includes('gujarat') || rawCity.includes('surat') || rawCity.includes('ahmedabad') || rawCity.includes('vadodara') || rawCity.includes('rajkot')) {
-    state = 'Gujarat';
-  } else if (input.state) {
-    state = input.state;
-  }
+  const state = resolveState(input.state, input.city);
+  const city = input.city || (state === 'Gujarat' ? 'Surat' : STATE_PORTALS[state]?.cities[0] || 'Industrial City');
 
   return {
     ...input,
     sector,
-    employees,
-    investmentLakh,
-    hazardous,
     state,
-    city: input.city || (state === 'Gujarat' ? 'Surat' : ''),
-    stage: input.stage || 'New',
+    city,
+    investmentLakh,
+    employees,
+    hazardous,
   };
 }
 
-// ── Dynamic Statutory Fee Calculator ─────────────────────────────────────────
+// ── 3. Dynamic Statutory Fee Calculator ───────────────────────────────────────
 export function computeStatutoryFee(code, ctx = {}) {
   const emp = Number(ctx.employees) || 12;
   const haz = Boolean(ctx.hazardous);
+  const _inv = Number(ctx.investmentLakh) || 30;
 
   switch (code) {
     case 'MSME-06':
       return {
         statutoryFeeInr: 0,
-        feeFormula: 'Exempt — Statutory Free Portal under MSMED Act',
+        feeFormula: 'Exempt — Statutory Free Portal under MSMED Act, 2006',
       };
     case 'FIN-07':
       return {
         statutoryFeeInr: 0,
-        feeFormula: 'Statutory Zero Fee on GSTN & State Tax Portal',
+        feeFormula: 'Statutory Zero Fee on GSTN & State Professional Tax Portal',
       };
     case 'FD-01': {
-      const fee = 5000 + (haz ? 10000 : 2500);
+      const fee = haz ? 15000 : 7500;
       return {
         statutoryFeeInr: fee,
-        feeFormula: '₹15/sq.m Fire Cess under State Fire Act',
+        feeFormula: haz
+          ? '₹15,000 High-Risk / Chemical Hazard Scrutiny Cess'
+          : '₹7,500 Standard Industrial Fire Safety Review Fee',
       };
     }
     case 'ENV-02': {
-      if (haz || ctx.sector === 'chemical') {
+      if (ctx.sector === 'renewable' && !haz) {
         return {
-          statutoryFeeInr: 15000,
-          feeFormula: 'SPCB Consent Fee Slab for Investment <= ₹1 Cr',
+          statutoryFeeInr: 0,
+          feeFormula: 'Exempt — CPCB White Category Exemption Undertaking',
         };
       }
-      if (['textile', 'food', 'engineering', 'manufacturing'].includes(ctx.sector)) {
+      if (['electronics', 'datacenter'].includes(ctx.sector) && !haz) {
+        return {
+          statutoryFeeInr: 2000,
+          feeFormula: 'SPCB Green Category Expedited Consent Schedule',
+        };
+      }
+      if (['automotive', 'food', 'textile'].includes(ctx.sector) && !haz) {
         return {
           statutoryFeeInr: 7500,
-          feeFormula: 'SPCB Consent Fee Slab for Investment <= ₹1 Cr',
+          feeFormula: 'SPCB Orange Category Consent Schedule (Investment <= ₹1 Cr)',
         };
       }
       return {
-        statutoryFeeInr: 2000,
-        feeFormula: 'SPCB Consent Fee Slab for Investment <= ₹1 Cr',
+        statutoryFeeInr: 15000,
+        feeFormula: 'SPCB Red Category Consent Schedule (Pollution Index >= 60)',
       };
     }
     case 'IND-03':
       return {
         statutoryFeeInr: emp <= 20 ? 4500 : 9000,
-        feeFormula: 'Factories Act Schedule-I (HP + Workforce Slab)',
+        feeFormula: emp <= 20
+          ? 'Factories Act Schedule-I (<= 20 Workers Slab)'
+          : 'Factories Act Schedule-I (> 20 Workers Slab)',
       };
     case 'LAB-04':
+      if (emp < 10) {
+        return {
+          statutoryFeeInr: 1000,
+          feeFormula: 'State Shops & Commercial Establishments Act (< 10 Workers)',
+        };
+      }
+      if (emp >= 20) {
+        return {
+          statutoryFeeInr: 5000,
+          feeFormula: 'Contract Labour (R&A) Act 1970 & OSH Code (>= 20 Workers)',
+        };
+      }
       return {
-        statutoryFeeInr: emp < 10 ? 1000 : 3000,
-        feeFormula: 'Shram Suvidha Headcount Slab',
+        statutoryFeeInr: 3000,
+        feeFormula: 'Shram Suvidha Common Headcount Slab (10-19 Employees)',
       };
     case 'UTL-05':
       return {
         statutoryFeeInr: 6500,
-        feeFormula: 'DISCOM LT/HT Application & Line Inspection Fee',
-      };
-    case 'FSSAI-09':
-      return {
-        statutoryFeeInr: 5000,
-        feeFormula: 'FoSCoS Schedule-3 State Manufacturing Fee (Annual)',
-      };
-    case 'HAZ-11':
-      return {
-        statutoryFeeInr: 12000,
-        feeFormula: 'HOWM Rules Authorization & Scrutiny Fee',
+        feeFormula: 'DISCOM LT/HT Industrial Application & Line Inspection Fee',
       };
     case 'BOIL-13':
       return {
         statutoryFeeInr: 6000,
-        feeFormula: 'Indian Boiler Regulations Steam Rating Slab',
+        feeFormula: 'Indian Boilers Regulations Steam Rating & Inspection Slab',
+      };
+    case 'FSSAI-09':
+      return {
+        statutoryFeeInr: 5000,
+        feeFormula: 'FoSCoS Schedule-3 State Food Manufacturing Licence Fee',
+      };
+    case 'LM-17':
+      return {
+        statutoryFeeInr: 2000,
+        feeFormula: 'Legal Metrology Packaged Commodities (LMPC) Rule-27 Registration Fee',
+      };
+    case 'HAZ-11':
+      return {
+        statutoryFeeInr: 12000,
+        feeFormula: 'HOWM Rules 2016 Authorization & TSDF Membership Scrutiny Fee',
+      };
+    case 'PESO-18':
+      return {
+        statutoryFeeInr: 10000,
+        feeFormula: 'PESO Petroleum & Pressure Vessel Inspection Fee',
+      };
+    case 'DRUG-12':
+      return {
+        statutoryFeeInr: 15000,
+        feeFormula: 'CDSCO / State FDA Schedule-M Manufacturing Inspection Fee',
+      };
+    case 'EPR-10':
+      return {
+        statutoryFeeInr: 8000,
+        feeFormula: 'CPCB EPR Portal Producer Responsibility Scrutiny Fee',
+      };
+    case 'AUTO-14':
+      return {
+        statutoryFeeInr: 12500,
+        feeFormula: 'ARAI / ICAT Type Homologation & AIS-156 EV Testing Cess',
+      };
+    case 'REN-15':
+      return {
+        statutoryFeeInr: 7500,
+        feeFormula: 'CEIG Energisation & MNRE ALMM Grid Connectivity Inspection Fee',
+      };
+    case 'DC-19':
+      return {
+        statutoryFeeInr: 10000,
+        feeFormula: 'DoT Saral Sanchar OSP & High-Capacity DG Acoustic Scrutiny Fee',
       };
     default:
       return {
-        statutoryFeeInr: 2500,
+        statutoryFeeInr: 3500,
         feeFormula: 'Standard Statutory Scrutiny Fee',
       };
   }
 }
 
-// ── RTPS Urgency Score Calculator ───────────────────────────────────────────
-export function computeUrgencyScore(approval) {
-  if (!approval) return 0;
-  if (['approved', 'rejected'].includes(approval.status)) return 0;
-
-  let score = 50;
-  const now = Date.now();
-  const deadlineMs = approval.slaDeadline
-    ? new Date(approval.slaDeadline).getTime()
-    : now + (approval.slaDays || 21) * 86400000;
-
-  const hoursRemaining = (deadlineMs - now) / 3600000;
-
-  if (hoursRemaining < 0) {
-    const daysOverdue = Math.abs(Math.floor(hoursRemaining / 24));
-    score += 100 + daysOverdue * 10;
-  } else if (hoursRemaining <= 48) {
-    score += 60;
-  } else if (hoursRemaining <= 120) {
-    score += 40;
-  } else if (hoursRemaining <= 240) {
-    score += 20;
-  } else {
-    score += 5;
-  }
-
-  if (approval.escalated) {
-    score += 50;
-  }
-
-  const risk = (approval.riskTier || '').toLowerCase();
-  if (risk === 'high') score += 30;
-  else if (risk === 'medium') score += 15;
-  else score += 5;
-
-  const warnings = Number(approval.warningsCount) || (approval.documents ? approval.documents.reduce((acc, d) => acc + (d.warnings?.length || 0), 0) : 0);
-  score += warnings * 10;
-
-  return score;
-}
-
-// ── Critical-Path SLA & Fee Turnaround Summary ───────────────────────────────
+// ── 4. Critical-Path SLA & Fee Turnaround Summary ───────────────────────────
 export function calculateCriticalPath(approvals = []) {
   if (!Array.isArray(approvals) || approvals.length === 0) {
     return {
@@ -266,248 +330,111 @@ export function calculateCriticalPath(approvals = []) {
   };
 }
 
-export const STATUTORY_CATALOG = [
-  {
-    code: 'MSME-06',
-    name: 'Udyam Registration',
-    department: 'MSME',
-    stage: 'Stage A: Zero-to-land / Premises Stage',
-    formName: 'Udyam Portal Annex-I',
-    slaDays: 3,
-    riskTier: 'low',
-    needsInspection: false,
-    requirementType: 'BASE',
-    statutoryBasis: 'MSMED Act, 2006 — Mandatory baseline MSME classification',
-    docs: ['Aadhaar of Promoter', 'Business PAN Card', 'Bank Account Proof'],
-    keywords: ['udyam', 'msme', 'small business', 'aadhaar', 'pan', 'msme-06'],
-    matches: (ctx) => ctx.investmentLakh <= 5000,
-  },
-  {
-    code: 'FIN-07',
-    name: 'GST & Professional Tax Registration',
-    department: 'Finance',
-    stage: 'Stage A: Zero-to-land / Premises Stage',
-    formName: 'GST REG-01 & Form-I',
-    slaDays: 7,
-    riskTier: 'low',
-    needsInspection: false,
-    requirementType: 'BASE',
-    statutoryBasis: 'CGST Act, 2017 Sec 22 & State Tax on Professions Act',
-    docs: ['Business PAN Card', 'Proof of Principal Place of Business', 'Cancelled Cheque'],
-    keywords: ['professional tax', 'pt', 'gst registration', 'gst certificate', 'gst portal', 'finance', 'fin-07'],
-    matches: () => true,
-  },
-  {
-    code: 'FD-01',
-    name: 'Provisional Fire Safety NOC',
-    department: 'Safety',
-    stage: 'Stage B: Pre-construction / Construction Stage',
-    formName: 'Fire Safety Form-A2',
-    slaDays: 21,
-    getRiskTier: (ctx) => (ctx.hazardous ? 'high' : 'medium'),
-    needsInspection: true,
-    requirementType: 'BASE',
-    statutoryBasis: 'State Fire Prevention & Life Safety Measures Act — Industrial Plot & Fire Load',
-    docs: ['Fire Safety Plan', 'Building Layout Plan', 'Lease Deed'],
-    keywords: ['fire', 'noc', 'fire safety', 'aag', 'fd-01'],
-    matches: (ctx) =>
-      ctx.hazardous === true ||
-      ['textile', 'chemical', 'engineering', 'manufacturing', 'food'].includes(ctx.sector) ||
-      ctx.investmentLakh >= 25,
-  },
-  {
-    code: 'ENV-02',
-    department: 'Environment',
-    stage: 'Stage B: Pre-construction / Construction Stage',
-    requirementType: 'BASE',
-    docs: ['Process Flow Diagram', 'Effluent / Air Emission Plan', 'Site Plan & Lease Deed'],
-    keywords: ['pollution', 'environment', 'consent', 'cte', 'cto', 'environmental', 'pradushan', 'env-02'],
-    matches: () => true,
-    dynamic: (ctx) => {
-      if (ctx.hazardous === true || ctx.sector === 'chemical') {
-        return {
-          name: 'Pollution Consent (CTE — Red Category)',
-          slaDays: 30,
-          riskTier: 'high',
-          needsInspection: true,
-          formName: 'SPCB Form-I (Red)',
-          statutoryBasis: 'Water Act 1974 & Air Act 1981 — CPCB Red Category (PI Score >= 60)',
-        };
-      }
-      if (['textile', 'food', 'engineering', 'manufacturing'].includes(ctx.sector)) {
-        return {
-          name: 'Pollution Consent (CTE — Orange Category)',
-          slaDays: 21,
-          riskTier: 'medium',
-          needsInspection: true,
-          formName: 'SPCB Form-I (Orange)',
-          statutoryBasis: 'CPCB Revised Classification — Orange Category Industrial Process',
-        };
-      }
-      return {
-        name: 'Pollution Consent (CTE — Green Category)',
-        slaDays: 15,
-        riskTier: 'low',
-        needsInspection: false,
-        formName: 'SPCB Green Intimation',
-        statutoryBasis: 'CPCB Green Category — Non-Polluting Assembly',
-      };
-    },
-  },
-  {
-    code: 'IND-03',
-    name: 'Factory Building Plan & Licence',
-    department: 'Industrial',
-    stage: 'Stage C: Commissioning / Pre-operation Stage',
-    formName: 'DISH Form-1 & Form-2',
-    slaDays: 30,
-    getRiskTier: (ctx) => (ctx.hazardous ? 'high' : 'medium'),
-    needsInspection: true,
-    requirementType: 'IF APPLICABLE',
-    statutoryBasis: 'The Factories Act, 1948 (Section 2m & Section 6) — >= 10 Workers with Power',
-    docs: ['Factory Layout Blueprint', 'Machinery Horsepower Schedule', 'Stability Certificate'],
-    keywords: ['factory', 'licence', 'license', 'industrial', 'machinery', 'karkhana', 'ind-03'],
-    matches: (ctx) => Number(ctx.employees) >= 10,
-  },
-  {
-    code: 'LAB-04',
-    department: 'Labour',
-    stage: 'Stage C: Commissioning / Pre-operation Stage',
-    needsInspection: false,
-    requirementType: 'BASE',
-    docs: ['Employee Muster Roll', 'Employer PAN & Address Proof', 'Partnership / Incorporation Deed'],
-    keywords: ['labour', 'labor', 'worker', 'workers', 'shramik', 'karmachari', 'log', 'lab-04', 'shop', 'establishment'],
-    matches: () => true,
-    dynamic: (ctx) => {
-      const emp = Number(ctx.employees);
-      if (emp < 10) {
-        return {
-          name: 'Shop & Establishment Registration',
-          slaDays: 7,
-          riskTier: 'low',
-          formName: 'Labour Form-A',
-          statutoryBasis: 'State Shops & Establishments Act — < 10 Workers (Exempt from Factories Act)',
-        };
-      }
-      if (emp >= 20) {
-        return {
-          name: 'Principal Employer & Contract Labour Registration',
-          slaDays: 15,
-          riskTier: 'medium',
-          formName: 'CLRA Form-I / OSH Code',
-          statutoryBasis: 'Contract Labour (R&A) Act, 1970 & EPF/ESI — >= 20 Workers',
-        };
-      }
-      return {
-        name: 'Labour Welfare & EPF/ESIC Registration',
-        slaDays: 10,
-        riskTier: 'low',
-        formName: 'Shram Suvidha Common Form',
-        statutoryBasis: 'ESIC Act, 1948 & EPF Act, 1952 — >= 10 Employees',
-      };
-    },
-  },
-  {
-    code: 'UTL-05',
-    name: 'HT / LT Industrial Power Sanction',
-    department: 'Utilities',
-    stage: 'Stage C: Commissioning / Pre-operation Stage',
-    formName: 'DISCOM LT/HT Form-1',
-    slaDays: 15,
-    riskTier: 'low',
-    needsInspection: true,
-    requirementType: 'BASE',
-    statutoryBasis: 'Electricity Act, 2003 (Section 43) — Industrial Connected Load',
-    docs: ['Electrical Load Calculation Sheet', 'Test Report from Licensed Electrical Contractor', 'Premises Ownership / Lease Deed'],
-    keywords: ['electricity', 'power', 'bijli', 'connection', 'utility', 'load', 'utl-05'],
-    matches: () => true,
-  },
-  {
-    code: 'FSSAI-09',
-    name: 'FSSAI State Manufacturing Licence',
-    department: 'Safety',
-    stage: 'Stage D: Industry-Specific Compliance',
-    formName: 'FoSCoS Form-B',
-    slaDays: 21,
-    riskTier: 'medium',
-    needsInspection: true,
-    requirementType: 'IF APPLICABLE',
-    statutoryBasis: 'Food Safety & Standards Act, 2006 (Section 31) — State Manufacturing Capacity',
-    docs: ['Food Safety Management System (FSMS) Plan', 'Water Potability Test Report', 'List of Food Categories & Equipment'],
-    keywords: ['fssai', 'food', 'khana', 'edible', 'foscos', 'fssai-09'],
-    matches: (ctx) => ctx.sector === 'food',
-  },
-  {
-    code: 'HAZ-11',
-    name: 'Hazardous Waste Authorization (HOWM)',
-    department: 'Environment',
-    stage: 'Stage D: Industry-Specific Compliance',
-    formName: 'HOWM Form-1 & MSIHC Schedule',
-    slaDays: 45,
-    riskTier: 'high',
-    needsInspection: true,
-    requirementType: 'IF APPLICABLE',
-    statutoryBasis: 'Hazardous & Other Wastes (M&TM) Rules, 2016 & MSIHC Rules, 1989',
-    docs: ['Emergency Response Plan', 'Hazardous Waste Generation & Storage Protocol', 'TSDF Membership Certificate'],
-    keywords: ['hazardous', 'chemical', 'toxic', 'waste', 'hazmat', 'msihc', 'haz-11'],
-    matches: (ctx) => ctx.hazardous === true || ctx.sector === 'chemical',
-  },
-  {
-    code: 'BOIL-13',
-    name: 'Industrial Boiler Registration',
-    department: 'Industrial',
-    stage: 'Stage C: Commissioning / Pre-operation Stage',
-    formName: 'Boiler Form-B',
-    slaDays: 21,
-    riskTier: 'medium',
-    needsInspection: true,
-    requirementType: 'IF APPLICABLE',
-    statutoryBasis: 'Indian Boilers Act, 1923 (Section 7) — Steam Generation Vessels',
-    docs: ['Boiler Maker Certificate', 'Welder Qualification Record', 'Hydraulic Test Certificate'],
-    keywords: ['boiler', 'steam', 'steam vessel', 'pressure vessel', 'boil-13'],
-    matches: (ctx) => ['textile', 'chemical'].includes(ctx.sector),
-  },
-];
+// ── 4b. Urgency Scoring ─────────────────────────────────────────────────────
+export function computeUrgencyScore(item) {
+  if (!item || ['approved', 'rejected'].includes(item.status)) return 0;
+  const now = Date.now();
+  const deadline = item.slaDeadline ? new Date(item.slaDeadline).getTime() : now + 30 * 86400000;
+  const diffDays = Math.ceil((deadline - now) / 86400000);
+  const isOverdue = diffDays < 0;
 
-// ── Statutory Government Support & Subsidy Schemes Catalog ──────────────────
-export const SCHEMES_CATALOG = [
-  {
-    code: 'SCH-01',
-    name: 'PMEGP Capital Subsidy (Margin Money Scheme)',
-    agency: 'Ministry of MSME (KVIC)',
-    benefit: '15% to 35% Capital Subsidy on Project Cost',
-    eligibilityBasis: 'Eligible: Manufacturing unit with project investment <= ₹50 Lakh under PMEGP norms',
-    portal: 'KVIC PMEGP e-Portal',
-    matches: (ctx) => Number(ctx.investmentLakh) <= 50,
-  },
-  {
-    code: 'SCH-02',
-    name: 'CGTMSE Collateral-Free Credit Guarantee',
-    agency: 'SIDBI & Ministry of MSME',
-    benefit: 'Up to 85% Credit Guarantee Cover (No Collateral up to ₹5 Cr)',
-    eligibilityBasis: 'Eligible: MSME credit facility <= ₹5 Crore under CGTMSE Trust rules',
-    portal: 'CGTMSE Member Lending Portal',
-    matches: (ctx) => Number(ctx.investmentLakh) <= 500,
-  },
-  {
-    code: 'SCH-03',
-    name: 'State Industrial Policy Interest & Power Subsidy',
-    getAgency: (ctx) => (ctx.state === 'Gujarat' ? 'Industries & Mines Dept, Gujarat' : 'State Directorate of Industries'),
-    benefit: '5% to 7% Interest Subsidy for 5 Years + Electricity Duty Exemption',
-    eligibilityBasis: 'Eligible: Concessional term loan interest & industrial power tariff exemption',
-    getPortal: (ctx) => (ctx.state === 'Gujarat' ? 'Investor Facilitation Portal (IFP Gujarat)' : 'State Single Window System'),
-    matches: (ctx) => Number(ctx.investmentLakh) <= 5000,
-  },
-  {
-    code: 'SCH-04',
-    name: 'ZED Certification & Clean Technology Subsidy',
-    agency: 'Ministry of MSME',
-    benefit: 'Up to 80% Subsidy on Clean Tech, Energy Audits & ZED Certification',
-    eligibilityBasis: 'Eligible: Zero Defect Zero Effect (ZED) green process compliance',
-    portal: 'MSME ZED Official Portal',
-    matches: (ctx) => ctx.hazardous === true || ['textile', 'chemical', 'food'].includes(ctx.sector),
-  },
-];
+  if (isOverdue && item.escalated) return 100;
+  if (isOverdue) return 90;
+  if (item.escalated) return 80;
+  if (diffDays <= 1) return 70;
+  if (diffDays <= 2) return 60;
+  if (item.riskTier === 'high') return 55;
+  return Math.max(10, 50 - diffDays);
+}
+
+// ── 5. Complete Statutory Approvals Catalog (Hydrated from Dataset) ─────────
+export const STATUTORY_CATALOG = rawDataset.approvalsCatalog.map((item) => {
+  const code = item.code;
+  const rule = item.rule || {};
+
+  const matches = (ctx) => {
+    if (rule.always) return true;
+    if (rule.maxInvestmentLakh !== undefined && Number(ctx.investmentLakh) > rule.maxInvestmentLakh) return false;
+    if (rule.minInvestmentLakh !== undefined && Number(ctx.investmentLakh) < rule.minInvestmentLakh) return false;
+    if (rule.minEmployees !== undefined && Number(ctx.employees) < rule.minEmployees) return false;
+    if (rule.sectors && !rule.sectors.includes(ctx.sector)) return false;
+    if (rule.hazardousOrSectors && !ctx.hazardous && !rule.hazardousOrSectors.includes(ctx.sector)) return false;
+    if (rule.excludeSectorIfInvestmentUnder) {
+      if (ctx.sector === rule.excludeSectorIfInvestmentUnder.sector && Number(ctx.investmentLakh) < rule.excludeSectorIfInvestmentUnder.minInvestmentLakh) {
+        return false;
+      }
+    }
+    if (rule.orHazardousMinInvestment !== undefined) {
+      const match1 = rule.sector && ctx.sector === rule.sector;
+      const match2 = ctx.hazardous && Number(ctx.investmentLakh) >= rule.orHazardousMinInvestment;
+      return match1 || match2;
+    }
+    if (rule.sector && ctx.sector !== rule.sector) return false;
+    return true;
+  };
+
+  let dynamic = undefined;
+  if (code === 'ENV-02' && item.dynamicVariants) {
+    dynamic = (ctx) => {
+      if (['pharma', 'chemical'].includes(ctx.sector) || ctx.hazardous === true) {
+        return item.dynamicVariants.red;
+      }
+      if (['automotive', 'food', 'textile'].includes(ctx.sector)) {
+        return item.dynamicVariants.orange;
+      }
+      if (['electronics', 'datacenter'].includes(ctx.sector)) {
+        return item.dynamicVariants.green;
+      }
+      return item.dynamicVariants.white;
+    };
+  } else if (code === 'LAB-04' && item.dynamicVariants) {
+    dynamic = (ctx) => {
+      const emp = Number(ctx.employees);
+      if (emp < 10) return item.dynamicVariants.under10;
+      if (emp >= 20) return item.dynamicVariants.over20;
+      return item.dynamicVariants.standard;
+    };
+  }
+
+  const getRiskTier = item.riskTierHazardous
+    ? (ctx) => (ctx.hazardous ? item.riskTierHazardous : item.riskTier)
+    : undefined;
+
+  return {
+    ...item,
+    matches,
+    dynamic,
+    getRiskTier,
+  };
+});
+
+// ── 6. Expanded Statutory Government Support & Subsidy Schemes (Hydrated) ───
+export const SCHEMES_CATALOG = rawDataset.subsidiesCatalog.map((item) => {
+  const rule = item.rule || {};
+
+  const matches = (ctx) => {
+    if (rule.maxInvestmentLakh !== undefined && Number(ctx.investmentLakh) > rule.maxInvestmentLakh) return false;
+    if (rule.minInvestmentLakh !== undefined && Number(ctx.investmentLakh) < rule.minInvestmentLakh) return false;
+    if (rule.sectors && !rule.sectors.includes(ctx.sector)) return false;
+    if (rule.hazardousOrSectors && !ctx.hazardous && !rule.hazardousOrSectors.includes(ctx.sector)) return false;
+    return true;
+  };
+
+  const getAgency = item.agencyTemplate
+    ? (ctx) => item.agencyTemplate.replace('{state}', ctx.state)
+    : undefined;
+
+  const getPortal = item.portalTemplate
+    ? (ctx) => STATE_PORTALS[ctx.state]?.portalName || 'State Single Window System'
+    : undefined;
+
+  return {
+    ...item,
+    matches,
+    getAgency,
+    getPortal,
+  };
+});
 
 export function evaluateEligibleSchemes(rawInput = {}) {
   const ctx = normalizeBusinessInput(rawInput);
@@ -528,119 +455,18 @@ export function evaluateEligibleSchemes(rawInput = {}) {
   return matched;
 }
 
-// ── Statutory GeM / CPPP Government Tenders Catalog ─────────────────────────
-export const TENDERS_CATALOG = [
-  // Textile (sector === "textile")
-  {
-    code: 'TND-GJ-101',
-    name: 'Supply of Fire-Retardant Industrial Cotton Uniforms & Fabric',
-    buyer: 'Gujarat State Road Transport Corp (GSRTC) — GeM Portal',
-    tenderValue: '₹42.50 Lakh',
-    emdExemption: '100% MSE Exempt (Udyam Verified)',
-    portalRef: 'GEM/2026/B/4829104',
-    bidWindow: '21 Days Open',
-    statutoryPreRequisite: 'Requires 100% Approved Factory, Fire Safety & GPCB Clearances',
-    sector: 'textile',
-    matches: (ctx) => ctx.sector === 'textile',
-  },
-  {
-    code: 'TND-IN-102',
-    name: 'Procurement of Institutional Bed Linen & Hospital Textiles',
-    buyer: 'ESIC Model Hospitals Directorate (Ministry of Labour)',
-    tenderValue: '₹68.00 Lakh',
-    emdExemption: 'MSE Price Preference (15% Band)',
-    portalRef: 'CPPP/2026/ESIC/8821',
-    bidWindow: '30 Days Open',
-    statutoryPreRequisite: 'Requires Valid Udyam, GST, EPF/ESIC & Boiler Compliance',
-    sector: 'textile',
-    matches: (ctx) => ctx.sector === 'textile',
-  },
-
-  // Food Processing (sector === "food")
-  {
-    code: 'TND-GJ-201',
-    name: 'Supply of Fortified Edible Oil & Spices for Mid-Day Meal Scheme',
-    buyer: 'Commissioner of Mid-Day Meals, Govt. of Gujarat',
-    tenderValue: '₹85.00 Lakh',
-    emdExemption: '100% MSE Exempt',
-    portalRef: 'GEM/2026/B/5190231',
-    bidWindow: '18 Days Open',
-    statutoryPreRequisite: 'Requires Active FSSAI State Manufacturing Licence & SPCB Consent',
-    sector: 'food',
-    matches: (ctx) => ctx.sector === 'food',
-  },
-  {
-    code: 'TND-IN-202',
-    name: 'Empanelment of Processed Ration Suppliers for CAPF Canteens',
-    buyer: 'Kendriya Police Kalyan Bhandar (Ministry of Home Affairs)',
-    tenderValue: '₹1.20 Crore',
-    emdExemption: 'MSE Turnover Relaxed',
-    portalRef: 'CPPP/2026/MHA/3319',
-    bidWindow: '25 Days Open',
-    statutoryPreRequisite: 'Requires 100% Statutory Clearance & NABL Food Safety Audit',
-    sector: 'food',
-    matches: (ctx) => ctx.sector === 'food',
-  },
-
-  // Chemical / Hazardous (sector === "chemical" or hazardous === true)
-  {
-    code: 'TND-GJ-301',
-    name: 'Supply of Water Treatment & Effluent Neutralization Chemicals',
-    buyer: 'Gujarat Industrial Development Corporation (GIDC Water Supply)',
-    tenderValue: '₹1.45 Crore',
-    emdExemption: '100% MSE Exempt',
-    portalRef: 'GEM/2026/B/6091822',
-    bidWindow: '14 Days Open',
-    statutoryPreRequisite: 'Requires Red-Category CTE/CTO & HOWM Hazardous Authorization',
-    sector: 'chemical',
-    matches: (ctx) => ctx.hazardous === true || ctx.sector === 'chemical',
-  },
-  {
-    code: 'TND-IN-302',
-    name: 'Industrial Specialty Solvents & Lab Reagents Rate Contract',
-    buyer: 'ONGC Western Onshore Basin, Vadodara',
-    tenderValue: '₹2.10 Crore',
-    emdExemption: 'MSE Purchase Preference',
-    portalRef: 'CPPP/2026/ONGC/7741',
-    bidWindow: '28 Days Open',
-    statutoryPreRequisite: 'Requires Chief Fire Officer NOC & DISH Factory Licence',
-    sector: 'chemical',
-    matches: (ctx) => ctx.hazardous === true || ctx.sector === 'chemical',
-  },
-
-  // Engineering / Manufacturing / Default
-  {
-    code: 'TND-IN-401',
-    name: 'Supply of LT/HT Switchgear Enclosures & Precision Fabricated Parts',
-    buyer: 'Dakshin Gujarat Vij Company Ltd. (DGVCL DISCOM)',
-    tenderValue: '₹54.00 Lakh',
-    emdExemption: '100% MSE Exempt',
-    portalRef: 'GEM/2026/B/7120944',
-    bidWindow: '20 Days Open',
-    statutoryPreRequisite: 'Requires Factory Licence, DISCOM Sanction & Udyam Registration',
-    sector: 'engineering',
-    matches: (ctx) => ['engineering', 'manufacturing', 'electronics', 'pharma'].includes(ctx.sector),
-  },
-  {
-    code: 'TND-IN-402',
-    name: 'Rate Contract for Industrial Valves & Mechanical Assemblies',
-    buyer: 'Indian Railways — Western Railway Workshop, Dahod',
-    tenderValue: '₹92.00 Lakh',
-    emdExemption: '100% MSE Exempt',
-    portalRef: 'IREPS/2026/WR/1190',
-    bidWindow: '24 Days Open',
-    statutoryPreRequisite: 'Requires 100% Statutory Clearances & DISH Approval',
-    sector: 'engineering',
-    matches: (ctx) => ['engineering', 'manufacturing', 'electronics', 'pharma'].includes(ctx.sector),
-  },
-];
+// ── 7. Statutory GeM & CPPP Government Tenders Catalog (Hydrated) ───────────
+export const TENDERS_CATALOG = rawDataset.tendersCatalog.map((item) => ({
+  ...item,
+  matches: (ctx) => ctx.sector === item.sector,
+}));
 
 export function evaluateGovernmentTenders(businessInput = {}, approvalsList = []) {
   const ctx = normalizeBusinessInput(businessInput);
 
   let matched = TENDERS_CATALOG.filter((t) => t.matches(ctx));
   if (matched.length === 0) {
-    matched = TENDERS_CATALOG.filter((t) => ['TND-IN-401', 'TND-IN-402'].includes(t.code));
+    matched = TENDERS_CATALOG.slice(0, 2);
   }
 
   const list = Array.isArray(approvalsList) ? approvalsList : [];
@@ -680,7 +506,111 @@ export function evaluateGovernmentTenders(businessInput = {}, approvalsList = []
   };
 }
 
-// Mapping for canonical demo IDs (req1..req7)
+// ── 8. Deterministic NLP Intent & Sector Classifier ─────────────────────────
+export function classifyBusinessIntent(text = '') {
+  const lower = (text || '').toLowerCase();
+
+  // 1. Sector Classification with confidence scoring
+  let sector = null;
+  let classificationConfidence = 0.5;
+
+  const sectorMatches = [];
+  for (const s of SECTORS_CATALOG) {
+    let score = 0;
+    for (const kw of s.keywords) {
+      if (lower.includes(kw)) {
+        score += kw.length > 5 ? 2 : 1;
+      }
+    }
+    if (score > 0) {
+      sectorMatches.push({ sector: s.id, score });
+    }
+  }
+
+  sectorMatches.sort((a, b) => b.score - a.score);
+  if (sectorMatches.length > 0) {
+    sector = sectorMatches[0].sector;
+    classificationConfidence = Math.min(0.98, 0.7 + sectorMatches[0].score * 0.08);
+  } else {
+    sector = 'textile';
+    classificationConfidence = 0.5;
+  }
+
+  // 2. Stage
+  let stage = 'New';
+  if (/(starting|start|new|open|setting up|shuru|kholna|kholni|setup)/i.test(lower)) {
+    stage = 'New';
+  } else if (/(expand|expansion|badhana)/i.test(lower)) {
+    stage = 'Expansion';
+  } else if (/(renew|renewal)/i.test(lower)) {
+    stage = 'Renewal';
+  }
+
+  // 3. City & State (Cross-match against 10 Indian states)
+  let city = null;
+  let state = null;
+  for (const [stName, stConfig] of Object.entries(STATE_PORTALS)) {
+    for (const c of stConfig.cities) {
+      if (lower.includes(c.toLowerCase())) {
+        city = c;
+        state = stName;
+        break;
+      }
+    }
+    if (city) break;
+  }
+  if (!city) {
+    for (const stName of Object.keys(STATE_PORTALS)) {
+      if (lower.includes(stName.toLowerCase())) {
+        state = stName;
+        city = STATE_PORTALS[stName].cities[0];
+        break;
+      }
+    }
+  }
+  if (!state) {
+    state = 'Gujarat';
+    city = 'Surat';
+  }
+
+  // 4. Investment
+  let investmentLakh = null;
+  const croreMatch = lower.match(/(?:(?:rs\.?|inr|₹)\s*)?(\d+(?:\.\d+)?)\s*(?:crore|cr)\b/i);
+  if (croreMatch) {
+    investmentLakh = Math.round(parseFloat(croreMatch[1]) * 100);
+  } else {
+    const lakhMatch = lower.match(/(?:(?:rs\.?|inr|₹)\s*)?(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|lac|lacs|l)\b/i);
+    if (lakhMatch) {
+      investmentLakh = Math.round(parseFloat(lakhMatch[1]));
+    }
+  }
+  if (investmentLakh === null) investmentLakh = 30;
+
+  // 5. Employees
+  let employees = null;
+  const workerMatch = lower.match(/(\d+)\s*(?:workers|worker|employees|employee|people|log|staff|shramik|karmachari)\b/i);
+  if (workerMatch) {
+    employees = parseInt(workerMatch[1], 10);
+  }
+  if (employees === null) employees = 12;
+
+  // 6. Hazardous
+  const isSectorHazardous = ['chemical', 'pharma'].includes(sector);
+  const hazardous = isSectorHazardous || lower.includes('hazard') || lower.includes('chemical') || lower.includes('toxic') || lower.includes('acid');
+
+  return {
+    sector,
+    state,
+    city,
+    investmentLakh,
+    employees,
+    hazardous,
+    stage,
+    classificationConfidence: parseFloat(classificationConfidence.toFixed(2)),
+  };
+}
+
+// ── 9. Statutory Approvals Evaluator (Single Source of Truth) ───────────────
 const DEMO_CODE_TO_REQ_ID = {
   'IND-03': 'req1',
   'FD-01': 'req2',
@@ -693,7 +623,9 @@ const DEMO_CODE_TO_REQ_ID = {
 
 export function evaluateStatutoryApprovals(rawInput = {}, options = {}) {
   const ctx = normalizeBusinessInput(rawInput);
-  const routing = getStatePortalBadge(ctx.state);
+  const routing = getStatePortalBadge(ctx.state, ctx.city);
+  const stateConfig = getStateConfig(ctx.state, ctx.city);
+
   const preserveDemoIds = options.preserveDemoIds ?? (
     (ctx.sector === 'textile' && ctx.city?.toLowerCase() === 'surat') ||
     options.isDefaultDemo
@@ -734,7 +666,7 @@ export function evaluateStatutoryApprovals(rawInput = {}, options = {}) {
       status: 'not_started',
       statutoryFeeInr: dynamicProps.statutoryFeeInr !== undefined ? dynamicProps.statutoryFeeInr : feeInfo.statutoryFeeInr,
       feeFormula: dynamicProps.feeFormula || feeInfo.feeFormula,
-      rtpsActClause: 'Right to Public Services Act — Auto-Escalation & ₹250/day SLA Delay Liability',
+      rtpsActClause: `${stateConfig.rtpsAct} — Auto-Escalation & ${stateConfig.rtpsPenalty} SLA Delay Liability`,
     });
   }
 
@@ -771,11 +703,13 @@ export function deriveApprovalMetadata(app, state = 'Gujarat') {
   const feeInfo = computeStatutoryFee(catalogMatch?.code || app.code, app);
   const statutoryFeeInr = app.statutoryFeeInr !== undefined ? app.statutoryFeeInr : feeInfo.statutoryFeeInr;
   const feeFormula = app.feeFormula || feeInfo.feeFormula;
-  const rtpsActClause = app.rtpsActClause || 'Right to Public Services Act — Auto-Escalation & ₹250/day SLA Delay Liability';
+  const stateConfig = getStateConfig(state);
+  const rtpsActClause = app.rtpsActClause || `${stateConfig.rtpsAct} — Auto-Escalation & ${stateConfig.rtpsPenalty} SLA Delay Liability`;
 
   return { ...app, stage, formName, requirementType, statutoryBasis, routing, statutoryFeeInr, feeFormula, rtpsActClause };
 }
 
+// ── 10. AI Assistant Knowledge Base (8 Booming Sectors) ──────────────────────
 export const KNOWLEDGE_BASE = [
   ...STATUTORY_CATALOG.map((item) => ({
     sourceRef: item.code,
@@ -797,12 +731,12 @@ export const KNOWLEDGE_BASE = [
   },
   {
     sourceRef: 'GOV-14',
-    name: 'Government Support & Subsidy Schemes (PMEGP, CGTMSE, State Subsidy)',
+    name: 'Government Support & Subsidy Schemes (PMEGP, CGTMSE, State Subsidy, PLI)',
     department: 'MSME',
     slaDays: 15,
     docs: ['Udyam Registration Certificate', 'Detailed Project Report (DPR)', 'Bank Sanction Letter', 'Machinery Invoices'],
-    keywords: ['subsidy', 'subsidies', 'scheme', 'schemes', 'loan', 'grant', 'grants', 'support', 'pmegp', 'cgtmse', 'chhut', 'yojana', 'interest subsidy', 'gov-14'],
-    statutoryBasis: 'Credit Linked Capital Subsidy Scheme & State Industrial Policy',
+    keywords: ['subsidy', 'subsidies', 'scheme', 'schemes', 'loan', 'grant', 'grants', 'support', 'pmegp', 'cgtmse', 'pli', 'chhut', 'yojana', 'interest subsidy', 'gov-14'],
+    statutoryBasis: 'Credit Linked Capital Subsidy Scheme, PLI Scheme & State Industrial Policy',
   },
   {
     sourceRef: 'TND-15',

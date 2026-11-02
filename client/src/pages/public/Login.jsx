@@ -118,8 +118,7 @@ export default function Login() {
       if (data.user.role === 'applicant')  navigate('/app/dashboard');
       else if (data.user.role === 'officer') navigate('/officer/queue');
       else if (data.user.role === 'admin')   navigate('/admin/analytics');
-    } catch (err) {
-      console.error(err);
+    } catch {
       showToast('Demo login failed. Please try again.');
     } finally {
       setLoading(false);

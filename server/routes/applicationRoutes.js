@@ -25,16 +25,63 @@ router.post('/', protect, (req, res) => {
     const estimatedDays = criticalPath.estimatedDays;
     const tenderGate = evaluateGovernmentTenders(rawData, approvals);
 
+    const db = getDB();
     const newAppId = `APP-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newBizId = `b-${Date.now()}`;
+
+    const sectorCapitalized = (rawData.sector || 'Industrial').charAt(0).toUpperCase() + (rawData.sector || 'Industrial').slice(1);
+    const cityName = rawData.city || 'Surat';
+    const stateName = rawData.state || 'Gujarat';
+    const bizName = rawData.name || rawData.businessName || `${sectorCapitalized} Unit, ${cityName}`;
+
+    const newBusiness = {
+      id: newBizId,
+      userId: req.user?.id || 'u1',
+      name: bizName,
+      sector: sectorCapitalized,
+      city: cityName,
+      state: stateName,
+      address: rawData.address || `${cityName} Industrial Area`,
+      investment: `${rawData.investmentLakh || 30} Lakh`,
+      investmentLakh: Number(rawData.investmentLakh || 30),
+      employees: Number(rawData.employees || 12),
+      hazardous: Boolean(rawData.hazardous),
+      pan: rawData.pan || `AABC${Math.floor(1000 + Math.random() * 9000)}B`,
+      gstin: `24AABCS${Math.floor(1000 + Math.random() * 9000)}B1Z5`,
+      udyam: `UDYAM-${stateName.slice(0, 2).toUpperCase()}-00-${Math.floor(100000 + Math.random() * 900000)}`,
+    };
+
+    const newApplication = {
+      id: newAppId,
+      userId: req.user?.id || 'u1',
+      businessId: newBizId,
+      businessName: bizName,
+      sector: sectorCapitalized,
+      city: cityName,
+      state: stateName,
+      status: 'submitted',
+      submittedAt: new Date().toISOString(),
+      approvalRequests: approvals,
+    };
+
+    if (Array.isArray(db.businesses)) {
+      db.businesses.push(newBusiness);
+    }
+    if (Array.isArray(db.applications)) {
+      db.applications.push(newApplication);
+    }
+    saveDB();
 
     res.json({
-      application: { id: newAppId },
+      application: newApplication,
+      business: newBusiness,
       approvals,
       schemes,
       estimatedDays,
       criticalPath,
       totalStatutoryFeeInr: criticalPath.totalStatutoryFeeInr,
       tenderGate,
+      tenders: tenderGate.tenders,
     });
   } catch (error) {
     console.error('[Application Route Error]:', error);

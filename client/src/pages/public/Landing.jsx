@@ -10,7 +10,7 @@ export default function Landing() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    publicStatsAPI().then(res => setStats(res.data)).catch(console.error);
+    publicStatsAPI().then(res => setStats(res.data)).catch(() => {});
   }, []);
 
   const handleSubmit = async () => {
@@ -23,7 +23,7 @@ export default function Landing() {
       } else {
         navigate('/start', { state: { error: "Couldn't read that, please fill the steps." } });
       }
-    } catch (e) {
+    } catch {
       navigate('/start', { state: { error: "Something went wrong, please fill the steps manually." } });
     }
   };
@@ -67,8 +67,13 @@ export default function Landing() {
                 <span className="text-xs text-slate-400 font-medium mr-1 uppercase tracking-wider">Try:</span>
                 {[
                   "Textile unit in Surat, 30 lakh",
-                  "Food processing in Ahmedabad",
-                  "Chemical plant, hazardous, 2 crore",
+                  "EV & Battery Assembly, Pune, 150 lakh",
+                  "Pharma formulation, Ahmedabad, 120 lakh",
+                  "Solar PV Modules, Haridwar, 200 lakh",
+                  "Semiconductor & PCB, Bengaluru, 80 lakh",
+                  "Food processing in Sanand, 45 lakh",
+                  "Chemical plant, Bharuch, hazardous, 200 lakh",
+                  "Hyperscale Data Center, Noida, 500 lakh",
                 ].map((chip) => (
                   <button
                     key={chip}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useBusiness } from '../context/BusinessContext';
+import { loginAPI, resetAPI } from '../lib/api';
 import {
   Bell,
   LogOut,
@@ -10,12 +11,13 @@ import {
   Building2,
   Plus,
   Trash2,
+  RotateCcw,
 } from 'lucide-react';
 import { navConfig } from '../lib/navConfig';
 import AssistantDrawer from '../components/AssistantDrawer';
 
 export default function AppShell() {
-  const { user, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const { businesses, activeBusiness, selectBusiness, deleteBusiness } = useBusiness();
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,12 +26,58 @@ export default function AppShell() {
   const [bellOpen, setBellOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [dropUpOpen, setDropUpOpen] = useState(false);
+  const [switchingRole, setSwitchingRole] = useState(false);
+  const [resettingDemo, setResettingDemo] = useState(false);
 
   const dropUpRef = useRef(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleRoleSwitch = async (targetRole) => {
+    if (user?.role === targetRole || switchingRole) return;
+    setSwitchingRole(true);
+    const roleEmailMap = {
+      applicant: 'applicant@demo.com',
+      officer: 'officer@demo.com',
+      admin: 'admin@demo.com',
+    };
+    const targetRouteMap = {
+      applicant: '/app/dashboard',
+      officer: '/officer/queue',
+      admin: '/admin/analytics',
+    };
+
+    try {
+      const email = roleEmailMap[targetRole];
+      const res = await loginAPI(email);
+      login(res.data.user, res.data.token);
+      navigate(targetRouteMap[targetRole]);
+    } catch {
+      const fallbackUser =
+        targetRole === 'applicant'
+          ? { id: 'u1', name: 'Aarav Mehta', email: 'applicant@demo.com', role: 'applicant' }
+          : targetRole === 'officer'
+          ? { id: 'u2', name: 'Vikramaditya Sinh', email: 'officer@demo.com', role: 'officer' }
+          : { id: 'u3', name: 'Rajeshwari Iyer, IAS', email: 'admin@demo.com', role: 'admin' };
+      login(fallbackUser, 'demo-token');
+      navigate(targetRouteMap[targetRole]);
+    } finally {
+      setSwitchingRole(false);
+    }
+  };
+
+  const handleResetDemo = async () => {
+    if (resettingDemo) return;
+    setResettingDemo(true);
+    try {
+      await resetAPI();
+      window.location.reload();
+    } catch {
+      window.location.reload();
+    }
   };
 
   // Close drop-up on Esc key or click outside
@@ -59,8 +107,14 @@ export default function AppShell() {
 
   const navLinks = user?.role ? navConfig[user.role] || [] : [];
 
-  const userName = user?.name || 'Alice Applicant';
-  const userEmail = user?.email || 'alice@clearpath.gov';
+  const defaultUser = user?.role === 'officer'
+    ? { name: 'Vikramaditya Sinh', email: 'officer@demo.com' }
+    : user?.role === 'admin'
+    ? { name: 'Rajeshwari Iyer, IAS', email: 'admin@demo.com' }
+    : { name: 'Aarav Mehta', email: 'applicant@demo.com' };
+
+  const userName = user?.name || defaultUser.name;
+  const userEmail = user?.email || defaultUser.email;
   const userInitial = (userName.charAt(0) || 'A').toUpperCase();
 
   return (
@@ -272,8 +326,54 @@ export default function AppShell() {
             </svg>
             ClearPath
           </div>
-          <div className="hidden md:block"></div>
-          <div className="flex items-center gap-4 ml-auto">
+          <div className="hidden md:flex items-center gap-2">
+            <span className="font-mono text-[10px] uppercase font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+              GovTech Live Demo
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 ml-auto">
+            {/* Demo Role Switcher Segmented Control */}
+            <div className="hidden sm:flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/90 text-xs">
+              <span className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Role:
+              </span>
+              {[
+                { id: 'applicant', label: 'Applicant' },
+                { id: 'officer', label: 'Officer' },
+                { id: 'admin', label: 'Admin' },
+              ].map((r) => {
+                const isActive = user?.role === r.id;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => handleRoleSwitch(r.id)}
+                    disabled={switchingRole}
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Reset Demo Button */}
+            <button
+              type="button"
+              onClick={handleResetDemo}
+              disabled={resettingDemo}
+              title="Reset Demo Database to Initial Golden State"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/70 border border-slate-200/90 transition-all active:scale-[0.98]"
+            >
+              <RotateCcw size={12} className={resettingDemo ? 'animate-spin text-teal-600' : ''} />
+              <span className="hidden sm:inline">Reset Demo</span>
+            </button>
+
             <div className="relative">
               <button
                 onClick={() => setBellOpen(!bellOpen)}

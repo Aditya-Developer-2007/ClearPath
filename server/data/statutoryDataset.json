@@ -1,0 +1,759 @@
+{
+  "states": {
+    "Gujarat": {
+      "state": "Gujarat",
+      "portalName": "Investor Facilitation Portal (IFP Gujarat)",
+      "spcb": "Gujarat Pollution Control Board (GPCB)",
+      "discom": "DGVCL / MGVCL / UGVCL / PGVCL",
+      "rtpsAct": "Gujarat Jan Seva Act, 2013",
+      "rtpsPenalty": "₹250/day",
+      "rtpsPenaltyPerDay": 250,
+      "cities": ["Surat", "Ahmedabad", "Vadodara", "Rajkot", "Ankleshwar", "Sanand", "Vapi", "Bharuch", "Dahej"]
+    },
+    "Maharashtra": {
+      "state": "Maharashtra",
+      "portalName": "MAITRI 2.0 Single Window",
+      "spcb": "Maharashtra Pollution Control Board (MPCB)",
+      "discom": "MSEDCL (Mahavitaran)",
+      "rtpsAct": "Maharashtra Right to Public Services Act, 2015",
+      "rtpsPenalty": "₹500/day",
+      "rtpsPenaltyPerDay": 500,
+      "cities": ["Mumbai", "Pune", "Chakan", "Nashik", "Aurangabad", "Nagpur"]
+    },
+    "Delhi": {
+      "state": "Delhi",
+      "portalName": "Delhi Single Window System",
+      "spcb": "Delhi Pollution Control Committee (DPCC)",
+      "discom": "BSES Rajdhani / BSES Yamuna / TPDDL",
+      "rtpsAct": "Delhi Right to Citizen Services Act, 2011",
+      "rtpsPenalty": "₹200/day",
+      "rtpsPenaltyPerDay": 200,
+      "cities": ["New Delhi", "Delhi", "Okhla", "Bawana", "Narela"]
+    },
+    "Uttar Pradesh": {
+      "state": "Uttar Pradesh",
+      "portalName": "Nivesh Mitra 3.0",
+      "spcb": "Uttar Pradesh Pollution Control Board (UPPCB)",
+      "discom": "UPPCL / PVVNL / MVVNL",
+      "rtpsAct": "UP Janhit Guarantee Act, 2011",
+      "rtpsPenalty": "₹250/day",
+      "rtpsPenaltyPerDay": 250,
+      "cities": ["Noida", "Greater Noida", "Ghaziabad", "Lucknow", "Kanpur"]
+    },
+    "Tamil Nadu": {
+      "state": "Tamil Nadu",
+      "portalName": "TNSWP Single Window",
+      "spcb": "Tamil Nadu Pollution Control Board (TNPCB)",
+      "discom": "TANGEDCO",
+      "rtpsAct": "Tamil Nadu Business Facilitation Act, 2018",
+      "rtpsPenalty": "₹250/day",
+      "rtpsPenaltyPerDay": 250,
+      "cities": ["Chennai", "Coimbatore", "Hosur", "Tiruppur", "Sriperumbudur"]
+    },
+    "Karnataka": {
+      "state": "Karnataka",
+      "portalName": "Karnataka Udyog Mitra",
+      "spcb": "Karnataka State Pollution Control Board (KSPCB)",
+      "discom": "BESCOM / MESCOM / HESCOM",
+      "rtpsAct": "Karnataka Sakala Services Act, 2011",
+      "rtpsPenalty": "₹200/day",
+      "rtpsPenaltyPerDay": 200,
+      "cities": ["Bengaluru", "Bangalore", "Peenya", "Mysuru", "Mysore", "Hubballi", "Hubli"]
+    },
+    "Telangana": {
+      "state": "Telangana",
+      "portalName": "TG-iPASS",
+      "spcb": "Telangana State Pollution Control Board (TGPCB)",
+      "discom": "TSSPDCL / TSNPDCL",
+      "rtpsAct": "Telangana Industrial Project Approval & Self-Certification System (TG-iPASS) Act, 2014",
+      "rtpsPenalty": "₹1,000/day",
+      "rtpsPenaltyPerDay": 1000,
+      "cities": ["Hyderabad", "Genome Valley", "Warangal"]
+    },
+    "Haryana": {
+      "state": "Haryana",
+      "portalName": "HEPC Single Window",
+      "spcb": "Haryana State Pollution Control Board (HSPCB)",
+      "discom": "DHBVN / UHBVN",
+      "rtpsAct": "Haryana Right to Service Act, 2014",
+      "rtpsPenalty": "₹250/day",
+      "rtpsPenaltyPerDay": 250,
+      "cities": ["Gurugram", "Gurgaon", "Manesar", "Faridabad", "Panipat"]
+    },
+    "Rajasthan": {
+      "state": "Rajasthan",
+      "portalName": "RajNivesh",
+      "spcb": "Rajasthan State Pollution Control Board (RSPCB)",
+      "discom": "JVVNL / AVVNL / JdVVNL",
+      "rtpsAct": "Rajasthan Guaranteed Delivery of Public Services Act, 2011",
+      "rtpsPenalty": "₹250/day",
+      "rtpsPenaltyPerDay": 250,
+      "cities": ["Jaipur", "Bhiwadi", "Neemrana", "Kota"]
+    },
+    "Uttarakhand": {
+      "state": "Uttarakhand",
+      "portalName": "Invest Uttarakhand CAF",
+      "spcb": "Uttarakhand Pollution Control Board (UKPCB)",
+      "discom": "UPCL",
+      "rtpsAct": "Uttarakhand Right to Service Act, 2011",
+      "rtpsPenalty": "₹250/day",
+      "rtpsPenaltyPerDay": 250,
+      "cities": ["Haridwar", "Pantnagar", "Dehradun", "Haldwani", "Rudrapur"]
+    }
+  },
+  "sectors": [
+    {
+      "id": "automotive",
+      "name": "Automobile, EV & Battery Assembly",
+      "nicCode": "2910",
+      "cpcbCategory": "Orange",
+      "description": "Electric vehicles, battery pack integration, auto components, chassis and precision powertrain manufacturing",
+      "keywords": ["automotive", "automobile", "auto", "ev", "electric vehicle", "battery", "lithium", "chassis", "motor", "vehicle", "car", "bike", "scooter", "powertrain", "gadi", "gaadi", "engineering"],
+      "defaultHazardous": false
+    },
+    {
+      "id": "electronics",
+      "name": "Electronics, PCB & Semiconductor Assembly",
+      "nicCode": "2610",
+      "cpcbCategory": "Green",
+      "description": "Printed circuit board (PCB) assembly, semiconductor packaging, SMT lines, IoT devices and consumer hardware",
+      "keywords": ["electronics", "electronic", "pcb", "semiconductor", "chip", "smt", "iot", "hardware", "sensors", "circuit", "microcontroller", "manufacturing"],
+      "defaultHazardous": false
+    },
+    {
+      "id": "renewable",
+      "name": "Renewable Energy, Solar PV & Green Hydrogen",
+      "nicCode": "2710",
+      "cpcbCategory": "White",
+      "description": "Solar photovoltaic module fabrication, wind turbine sub-assemblies, green hydrogen electrolyzers and clean energy systems",
+      "keywords": ["renewable", "solar", "solar pv", "photovoltaic", "wind", "green hydrogen", "hydrogen", "clean tech", "clean energy", "panel", "electrolyzer"],
+      "defaultHazardous": false
+    },
+    {
+      "id": "pharma",
+      "name": "Pharmaceuticals, Bulk Drugs (API) & Biotech",
+      "nicCode": "2100",
+      "cpcbCategory": "Red",
+      "description": "Active Pharmaceutical Ingredients (API), bulk drug syntheses, formulation oral solids/injectables and biological therapeutics",
+      "keywords": ["pharma", "pharmaceuticals", "pharmaceutical", "bulk drug", "api", "medicine", "biotech", "biotechnology", "drug", "formulation", "tablet", "syrup", "dawa", "dawakhana", "vaccine"],
+      "defaultHazardous": true
+    },
+    {
+      "id": "chemical",
+      "name": "Specialty Chemicals, Petrochemicals & Solvents",
+      "nicCode": "2011",
+      "cpcbCategory": "Red",
+      "description": "Organic specialty intermediates, industrial solvents, fine chemical syntheses, polymers and resins",
+      "keywords": ["chemical", "chemicals", "specialty chemicals", "petrochemical", "solvent", "acid", "polymer", "resin", "paint", "dye", "pigment", "distillation"],
+      "defaultHazardous": true
+    },
+    {
+      "id": "food",
+      "name": "Food Processing, Cold Chain & Agro-Tech",
+      "nicCode": "1010",
+      "cpcbCategory": "Orange",
+      "description": "Commercial packaged foods, edible oil refineries, spice processing, dairy manufacturing and integrated cold-chain logistics",
+      "keywords": ["food", "food processing", "agro", "agro-tech", "cold chain", "cold storage", "dairy", "spice", "edible oil", "beverage", "khana", "flour", "grains", "biscuit", "bakery"],
+      "defaultHazardous": false
+    },
+    {
+      "id": "textile",
+      "name": "Textiles, Apparel & Technical Textiles",
+      "nicCode": "1311",
+      "cpcbCategory": "Orange",
+      "description": "Powerloom weaving, circular knitting, synthetic filament yarn processing, apparel garmenting and geotextiles",
+      "keywords": ["textile", "textiles", "apparel", "garment", "garments", "fabric", "cotton", "spinning", "weaving", "yarn", "dyeing", "kapda", "powerloom", "surat textile"],
+      "defaultHazardous": false
+    },
+    {
+      "id": "datacenter",
+      "name": "IT Infrastructure, Cloud & Hyperscale Data Centers",
+      "nicCode": "6311",
+      "cpcbCategory": "Green",
+      "description": "Enterprise data halls, server rack colocation, high-availability cloud infrastructure and optical network telecommunications",
+      "keywords": ["datacenter", "data center", "cloud", "server", "rack", "hyperscale", "hosting", "colocation", "it infra", "telecom", "telecommunications", "compute"],
+      "defaultHazardous": false
+    }
+  ],
+  "approvalsCatalog": [
+    {
+      "code": "MSME-06",
+      "name": "Udyam MSME Registration",
+      "department": "MSME",
+      "stage": "Stage A: Zero-to-land / Premises Stage",
+      "formName": "Udyam Portal Annex-I",
+      "slaDays": 3,
+      "riskTier": "low",
+      "needsInspection": false,
+      "requirementType": "BASE",
+      "statutoryBasis": "MSMED Act, 2006 Sec 8 — Mandatory baseline MSME classification",
+      "docs": ["Aadhaar of Promoter", "Business PAN Card", "Bank Account Proof"],
+      "keywords": ["udyam", "msme", "small business", "aadhaar", "pan", "msme-06"],
+      "rule": {
+        "maxInvestmentLakh": 5000
+      }
+    },
+    {
+      "code": "FIN-07",
+      "name": "GST & State Professional Tax Registration",
+      "department": "Finance",
+      "stage": "Stage A: Zero-to-land / Premises Stage",
+      "formName": "GST REG-01 & Form-I",
+      "slaDays": 7,
+      "riskTier": "low",
+      "needsInspection": false,
+      "requirementType": "BASE",
+      "statutoryBasis": "CGST Act, 2017 Sec 22 & State Tax on Professions Act",
+      "docs": ["Business PAN Card", "Proof of Principal Place of Business", "Cancelled Cheque"],
+      "keywords": ["professional tax", "pt", "gst registration", "gst certificate", "gst portal", "finance", "fin-07"],
+      "rule": {
+        "always": true
+      }
+    },
+    {
+      "code": "FD-01",
+      "name": "Provisional Fire Safety NOC",
+      "department": "Safety",
+      "stage": "Stage B: Pre-construction / Construction Stage",
+      "formName": "Fire Safety Form-A2",
+      "slaDays": 21,
+      "riskTier": "medium",
+      "riskTierHazardous": "high",
+      "needsInspection": true,
+      "requirementType": "BASE",
+      "statutoryBasis": "State Fire Prevention Act & NBC 2016 Part-4 — Industrial Fire Load Norms",
+      "docs": ["Fire Safety Plan", "Building Layout Plan", "Lease Deed"],
+      "keywords": ["fire", "noc", "fire safety", "aag", "fd-01", "chief fire officer"],
+      "rule": {
+        "excludeSectorIfInvestmentUnder": {
+          "sector": "renewable",
+          "minInvestmentLakh": 25
+        }
+      }
+    },
+    {
+      "code": "ENV-02",
+      "department": "Environment",
+      "stage": "Stage B: Pre-construction / Construction Stage",
+      "requirementType": "BASE",
+      "docs": ["Process Flow Diagram", "Effluent / Air Emission Plan", "Site Plan & Lease Deed"],
+      "keywords": ["pollution", "environment", "consent", "cte", "cto", "gpcb", "mpcb", "uppcb", "spcb", "env-02"],
+      "dynamicVariants": {
+        "red": {
+          "name": "Pollution Consent (CTE — Red Category)",
+          "slaDays": 30,
+          "riskTier": "high",
+          "needsInspection": true,
+          "formName": "SPCB Form-I (Red Category — PI >= 60)",
+          "statutoryBasis": "Water Act 1974 Sec 25 & Air Act 1981 Sec 21 — CPCB Red Category (PI >= 60)"
+        },
+        "orange": {
+          "name": "Pollution Consent (CTE — Orange Category)",
+          "slaDays": 21,
+          "riskTier": "medium",
+          "needsInspection": true,
+          "formName": "SPCB Form-I (Orange Category — PI 41-59)",
+          "statutoryBasis": "Water Act 1974 & Air Act 1981 — CPCB Orange Category (PI 41-59)"
+        },
+        "green": {
+          "name": "Pollution Consent (CTE — Green Category)",
+          "slaDays": 15,
+          "riskTier": "low",
+          "needsInspection": false,
+          "formName": "SPCB Green Consent Form",
+          "statutoryBasis": "CPCB Green Category — Low Pollution Assembly Norms"
+        },
+        "white": {
+          "name": "CPCB White Category Exemption Intimation",
+          "slaDays": 3,
+          "riskTier": "low",
+          "needsInspection": false,
+          "formName": "SPCB White Undertaking",
+          "statutoryBasis": "CPCB White Category Exemption — Non-Polluting Clean Energy"
+        }
+      },
+      "rule": {
+        "always": true
+      }
+    },
+    {
+      "code": "IND-03",
+      "name": "Factory Building Plan & Licence",
+      "department": "Industrial",
+      "stage": "Stage C: Commissioning / Pre-operation Stage",
+      "formName": "DISH Form-1 & Form-2",
+      "slaDays": 30,
+      "riskTier": "medium",
+      "riskTierHazardous": "high",
+      "needsInspection": true,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "The Factories Act, 1948 Sec 2(m)(i) & Sec 6 — Manufacturing with Power (>=10 Workers)",
+      "docs": ["Factory Layout Blueprint", "Machinery Horsepower Schedule", "Stability Certificate"],
+      "keywords": ["factory", "licence", "license", "industrial", "dish", "machinery", "karkhana", "ind-03"],
+      "rule": {
+        "minEmployees": 10
+      }
+    },
+    {
+      "code": "LAB-04",
+      "department": "Labour",
+      "stage": "Stage C: Commissioning / Pre-operation Stage",
+      "needsInspection": false,
+      "requirementType": "BASE",
+      "docs": ["Employee Muster Roll", "Employer PAN & Address Proof", "Partnership / Incorporation Deed"],
+      "keywords": ["labour", "labor", "worker", "workers", "shramik", "karmachari", "log", "lab-04", "shop", "establishment", "clra", "epf", "esic"],
+      "dynamicVariants": {
+        "under10": {
+          "name": "Shop & Establishment Registration",
+          "slaDays": 7,
+          "riskTier": "low",
+          "formName": "Labour Form-A",
+          "statutoryBasis": "State Shops & Commercial Establishments Act — < 10 Workers (Exempt from Factories Act)"
+        },
+        "over20": {
+          "name": "Principal Employer & Contract Labour (CLRA) Registration",
+          "slaDays": 15,
+          "riskTier": "medium",
+          "formName": "CLRA Form-I / OSH Code",
+          "statutoryBasis": "Contract Labour (R&A) Act, 1970 & OSH Code — >= 20 Workers"
+        },
+        "standard": {
+          "name": "Labour Welfare & EPF/ESIC Registration",
+          "slaDays": 10,
+          "riskTier": "low",
+          "formName": "Shram Suvidha Common Form",
+          "statutoryBasis": "ESIC Act, 1948 & EPF Act, 1952 — 10 to 19 Employees"
+        }
+      },
+      "rule": {
+        "always": true
+      }
+    },
+    {
+      "code": "UTL-05",
+      "name": "HT / LT Industrial Power & DISCOM Sanction",
+      "department": "Utilities",
+      "stage": "Stage C: Commissioning / Pre-operation Stage",
+      "formName": "DISCOM LT/HT Form-1",
+      "slaDays": 15,
+      "riskTier": "low",
+      "needsInspection": true,
+      "requirementType": "BASE",
+      "statutoryBasis": "Electricity Act, 2003 Sec 43 — Industrial Connected Load Sanction",
+      "docs": ["Electrical Load Calculation Sheet", "Test Report from Licensed Electrical Contractor", "Premises Ownership / Lease Deed"],
+      "keywords": ["electricity", "power", "bijli", "connection", "utility", "load", "discom", "utl-05"],
+      "rule": {
+        "always": true
+      }
+    },
+    {
+      "code": "BOIL-13",
+      "name": "Industrial Boiler & Steam Pipeline Registration",
+      "department": "Industrial",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "Boiler Form-B & Steam Line Plan",
+      "slaDays": 21,
+      "riskTier": "medium",
+      "needsInspection": true,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "Indian Boilers Act, 1923 Sec 7 — Steam Generation Vessels",
+      "docs": ["Boiler Maker Certificate", "Welder Qualification Record", "Hydraulic Test Certificate"],
+      "keywords": ["boiler", "steam", "steam vessel", "pressure vessel", "boil-13"],
+      "rule": {
+        "sector": "textile",
+        "minInvestmentLakh": 25
+      }
+    },
+    {
+      "code": "FSSAI-09",
+      "name": "FSSAI State / Central Food Manufacturing Licence",
+      "department": "Safety",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "FoSCoS Form-B",
+      "slaDays": 21,
+      "riskTier": "medium",
+      "needsInspection": true,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "Food Safety and Standards Act, 2006 Sec 31 — Food Manufacturing Licence",
+      "docs": ["Food Safety Management System (FSMS) Plan", "Water Potability Test Report", "List of Food Categories & Equipment"],
+      "keywords": ["fssai", "food", "khana", "edible", "foscos", "fssai-09"],
+      "rule": {
+        "sector": "food"
+      }
+    },
+    {
+      "code": "LM-17",
+      "name": "Legal Metrology Packaged Commodities (LMPC) Registration",
+      "department": "Safety",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "LMPC Rule-27",
+      "slaDays": 15,
+      "riskTier": "low",
+      "needsInspection": false,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "Legal Metrology Act, 2009 Sec 24 & Rules 2011 — Pre-packaged Commodities Norms",
+      "docs": ["Label Specimen & Mandatory Declarations", "Weight & Measurement Calibration Certificate", "Entity Registration Proof"],
+      "keywords": ["legal metrology", "lmpc", "packaging", "packaged", "weights", "measures", "lm-17"],
+      "rule": {
+        "sectors": ["food", "pharma", "electronics"]
+      }
+    },
+    {
+      "code": "HAZ-11",
+      "name": "Hazardous Waste & Chemical Storage Authorization",
+      "department": "Environment",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "HOWM Form-1",
+      "slaDays": 30,
+      "riskTier": "high",
+      "needsInspection": true,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "HOWM Rules, 2016 & MSIHC Rules, 1989 — Hazardous Chemical Protocol",
+      "docs": ["Emergency Response Plan", "Hazardous Waste Generation & Storage Protocol", "TSDF Membership Certificate"],
+      "keywords": ["hazardous", "chemical", "toxic", "waste", "hazmat", "msihc", "howm", "haz-11"],
+      "rule": {
+        "hazardousOrSectors": ["chemical", "pharma", "automotive"]
+      }
+    },
+    {
+      "code": "PESO-18",
+      "name": "PESO Petroleum, Solvent & Pressure Vessel Licence",
+      "department": "Safety",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "PESO Form-XV",
+      "slaDays": 30,
+      "riskTier": "high",
+      "needsInspection": true,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "Petroleum Act, 1934 & SMPV(U) Rules, 2016 — Petroleum & Solvent Storage",
+      "docs": ["PESO Approved Storage Layout", "Fabrication & Hydrostatic Test Certificate", "Site Safety Distance Verification"],
+      "keywords": ["peso", "petroleum", "solvent", "pressure vessel", "smpv", "flammable", "peso-18"],
+      "rule": {
+        "sector": "chemical",
+        "orHazardousMinInvestment": 50
+      }
+    },
+    {
+      "code": "DRUG-12",
+      "name": "CDSCO / State FDA Schedule-M Drug Manufacturing Licence",
+      "department": "Safety",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "CDSCO Form-25 / Form-28",
+      "slaDays": 45,
+      "riskTier": "high",
+      "needsInspection": true,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "Drugs and Cosmetics Act, 1940 Sec 18 & Schedule M — GMP Compliance",
+      "docs": ["Site Master File (SMF)", "HVAC Validation & Cleanroom Blueprint", "Approved Technical Personnel Dossier"],
+      "keywords": ["cdsco", "fda", "drug", "pharma", "schedule m", "gmp", "medicine", "drug-12"],
+      "rule": {
+        "sector": "pharma"
+      }
+    },
+    {
+      "code": "EPR-10",
+      "name": "CPCB E-Waste / Battery / Plastic EPR Registration & BIS CRS",
+      "department": "Environment",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "CPCB EPR Form-1",
+      "slaDays": 21,
+      "riskTier": "medium",
+      "needsInspection": false,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "E-Waste Management Rules, 2022 & BIS Act, 2016 — Producer Responsibility",
+      "docs": ["Extended Producer Responsibility (EPR) Plan", "Recycler Tie-Up Agreement", "BIS Compulsory Registration Certificate"],
+      "keywords": ["epr", "e-waste", "battery epr", "plastic epr", "bis", "crs", "cpcb epr", "epr-10"],
+      "rule": {
+        "sectors": ["electronics", "automotive"]
+      }
+    },
+    {
+      "code": "AUTO-14",
+      "name": "CMVR / AIS-156 EV & Auto Component Type Homologation",
+      "department": "Industrial",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "AIS-156 / CMVR Type Approval",
+      "slaDays": 30,
+      "riskTier": "medium",
+      "needsInspection": true,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "Motor Vehicles Act, 1988 & CMVR Rule 126 — ARAI / ICAT Type Approval",
+      "docs": ["Automotive / EV Component Specification Sheet", "ARAI / ICAT Type Approval Certificate", "Quality Management ISO-9001 Certificate"],
+      "keywords": ["cmvr", "ais-156", "ev homologation", "arai", "icat", "automotive type approval", "auto-14"],
+      "rule": {
+        "sector": "automotive"
+      }
+    },
+    {
+      "code": "REN-15",
+      "name": "CEIG Energisation & MNRE ALMM / Grid Connectivity Sanction",
+      "department": "Utilities",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "CEIG Reg-43 & Grid Form-G1",
+      "slaDays": 21,
+      "riskTier": "medium",
+      "needsInspection": true,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "CEA Safety Regulations, 2023 & Electricity Act Sec 7 — Grid Synchronization",
+      "docs": ["Single Line Diagram (SLD) & Protection Scheme", "Chief Electrical Inspector (CEIG) Safety Clearance", "MNRE ALMM Enlistment Proof"],
+      "keywords": ["ceig", "energisation", "mnre", "almm", "solar grid", "grid connectivity", "ren-15"],
+      "rule": {
+        "sector": "renewable"
+      }
+    },
+    {
+      "code": "DC-19",
+      "name": "DoT Infrastructure Provider / OSP & High-Capacity DG Acoustic Approval",
+      "department": "Utilities",
+      "stage": "Stage D: Industry-Specific Compliance",
+      "formName": "Saral Sanchar OSP-I & CEIG DG",
+      "slaDays": 21,
+      "riskTier": "low",
+      "needsInspection": false,
+      "requirementType": "IF APPLICABLE",
+      "statutoryBasis": "Indian Telegraph Act / Telecom Act, 2023 & CPCB DG Set Norms",
+      "docs": ["DoT Saral Sanchar Registration Dossier", "CPCB DG Acoustic Enclosure Certification", "Dual-Feed Redundancy Power Architecture"],
+      "keywords": ["dot", "osp", "saral sanchar", "data center permission", "hyperscale", "dg acoustic", "dc-19"],
+      "rule": {
+        "sector": "datacenter"
+      }
+    }
+  ],
+  "subsidiesCatalog": [
+    {
+      "code": "SCH-01",
+      "name": "PMEGP Capital Subsidy (Margin Money Scheme)",
+      "agency": "Ministry of MSME (KVIC)",
+      "benefit": "15% to 35% Capital Subsidy on Project Cost",
+      "eligibilityBasis": "Eligible: Manufacturing unit with project investment <= ₹50 Lakh under PMEGP norms",
+      "portal": "KVIC PMEGP e-Portal",
+      "rule": {
+        "maxInvestmentLakh": 50
+      }
+    },
+    {
+      "code": "SCH-02",
+      "name": "CGTMSE Collateral-Free Credit Guarantee",
+      "agency": "SIDBI & Ministry of MSME",
+      "benefit": "Up to 85% Credit Guarantee Cover (No Collateral up to ₹5 Cr)",
+      "eligibilityBasis": "Eligible: MSME credit facility <= ₹5 Crore under CGTMSE Trust rules",
+      "portal": "CGTMSE Member Lending Portal",
+      "rule": {
+        "maxInvestmentLakh": 500
+      }
+    },
+    {
+      "code": "SCH-03",
+      "name": "State Industrial Policy Interest & Power Subsidy",
+      "agencyTemplate": "{state} Directorate of Industries",
+      "benefit": "5% to 7% Interest Subsidy for 5 Years + Industrial Electricity Duty Exemption",
+      "eligibilityBasis": "Eligible: State Industrial Policy concessions on term loan & industrial power tariff",
+      "portalTemplate": "{portalName}",
+      "rule": {
+        "maxInvestmentLakh": 5000
+      }
+    },
+    {
+      "code": "SCH-04",
+      "name": "ZED Certification & Clean Technology Subsidy",
+      "agency": "Ministry of MSME",
+      "benefit": "Up to 80% Subsidy on Clean Tech, Energy Audits & ZED Certification",
+      "eligibilityBasis": "Eligible: Zero Defect Zero Effect (ZED) green process compliance",
+      "portal": "MSME ZED Official Portal",
+      "rule": {
+        "hazardousOrSectors": ["textile", "chemical", "food", "automotive", "electronics", "pharma"]
+      }
+    },
+    {
+      "code": "SCH-05",
+      "name": "PLI Scheme & Sectoral Capital Subsidy (Atmanirbhar Bharat)",
+      "agency": "NITI Aayog & Relevant Line Ministries",
+      "benefit": "4% to 6% Incentive on Incremental Sales / Up to 25% Capex Subsidy",
+      "eligibilityBasis": "Eligible: Priority sector with capital investment >= ₹50 Lakh under National PLI / Capital Subsidy Policy",
+      "portal": "National PLI Portal (investindia.gov.in)",
+      "rule": {
+        "sectors": ["automotive", "electronics", "pharma", "renewable", "textile", "datacenter"],
+        "minInvestmentLakh": 50
+      }
+    }
+  ],
+  "tendersCatalog": [
+    {
+      "code": "TND-TX-101",
+      "name": "Supply of Fire-Retardant Industrial Cotton Uniforms & Fabric",
+      "buyer": "Gujarat State Road Transport Corp (GSRTC) — GeM Portal",
+      "tenderValue": "₹42.50 Lakh",
+      "emdExemption": "100% MSE Exempt (Udyam Verified)",
+      "portalRef": "GEM/2026/B/4829104",
+      "bidWindow": "21 Days Open",
+      "statutoryPreRequisite": "Requires 100% Approved Factory, Fire Safety & GPCB Clearances",
+      "sector": "textile"
+    },
+    {
+      "code": "TND-TX-102",
+      "name": "Procurement of Institutional Bed Linen & Hospital Textiles",
+      "buyer": "ESIC Model Hospitals Directorate (Ministry of Labour)",
+      "tenderValue": "₹68.00 Lakh",
+      "emdExemption": "MSE Price Preference (15% Band)",
+      "portalRef": "CPPP/2026/ESIC/8821",
+      "bidWindow": "30 Days Open",
+      "statutoryPreRequisite": "Requires Valid Udyam, GST, EPF/ESIC & Boiler Compliance",
+      "sector": "textile"
+    },
+    {
+      "code": "TND-FD-201",
+      "name": "Supply of Fortified Edible Oil & Spices for Mid-Day Meal Scheme",
+      "buyer": "Commissioner of Mid-Day Meals, Govt. of Gujarat",
+      "tenderValue": "₹85.00 Lakh",
+      "emdExemption": "100% MSE Exempt",
+      "portalRef": "GEM/2026/B/5190231",
+      "bidWindow": "18 Days Open",
+      "statutoryPreRequisite": "Requires Active FSSAI State Manufacturing Licence & SPCB Consent",
+      "sector": "food"
+    },
+    {
+      "code": "TND-FD-202",
+      "name": "Empanelment of Processed Ration Suppliers for CAPF Canteens",
+      "buyer": "Kendriya Police Kalyan Bhandar (Ministry of Home Affairs)",
+      "tenderValue": "₹1.20 Crore",
+      "emdExemption": "MSE Turnover Relaxed",
+      "portalRef": "CPPP/2026/MHA/3319",
+      "bidWindow": "25 Days Open",
+      "statutoryPreRequisite": "Requires 100% Statutory Clearance & NABL Food Safety Audit",
+      "sector": "food"
+    },
+    {
+      "code": "TND-CH-301",
+      "name": "Supply of Water Treatment & Effluent Neutralization Chemicals",
+      "buyer": "Gujarat Industrial Development Corporation (GIDC Water Supply)",
+      "tenderValue": "₹1.45 Crore",
+      "emdExemption": "100% MSE Exempt",
+      "portalRef": "GEM/2026/B/6091822",
+      "bidWindow": "14 Days Open",
+      "statutoryPreRequisite": "Requires Red-Category CTE/CTO & HOWM Hazardous Authorization",
+      "sector": "chemical"
+    },
+    {
+      "code": "TND-CH-302",
+      "name": "Industrial Specialty Solvents & Lab Reagents Rate Contract",
+      "buyer": "ONGC Western Onshore Basin, Vadodara",
+      "tenderValue": "₹2.10 Crore",
+      "emdExemption": "MSE Purchase Preference",
+      "portalRef": "CPPP/2026/ONGC/7741",
+      "bidWindow": "28 Days Open",
+      "statutoryPreRequisite": "Requires Chief Fire Officer NOC & DISH Factory Licence",
+      "sector": "chemical"
+    },
+    {
+      "code": "TND-AU-401",
+      "name": "Supply of Electric Utility Vehicles & Battery Swapping Stations",
+      "buyer": "Energy Efficiency Services Limited (EESL) — GeM Portal",
+      "tenderValue": "₹2.40 Crore",
+      "emdExemption": "100% MSE Exempt",
+      "portalRef": "GEM/2026/B/8821901",
+      "bidWindow": "21 Days Open",
+      "statutoryPreRequisite": "Requires CMVR / AIS-156 EV Homologation & Factory Licence",
+      "sector": "automotive"
+    },
+    {
+      "code": "TND-AU-402",
+      "name": "Precision Machined EV Drivetrain & Suspension Components",
+      "buyer": "Integral Coach Factory (ICF Chennai) — Indian Railways IREPS",
+      "tenderValue": "₹1.80 Crore",
+      "emdExemption": "MSE Price Preference (15% Band)",
+      "portalRef": "IREPS/2026/ICF/9410",
+      "bidWindow": "30 Days Open",
+      "statutoryPreRequisite": "Requires Factory Licence, DISCOM Sanction & CPCB EPR Compliance",
+      "sector": "automotive"
+    },
+    {
+      "code": "TND-EL-501",
+      "name": "Turnkey Assembly of SMT PCBs & Microcontroller Modules",
+      "buyer": "Bharat Electronics Limited (BEL Bangalore) — GeM Portal",
+      "tenderValue": "₹1.65 Crore",
+      "emdExemption": "100% MSE Exempt",
+      "portalRef": "GEM/2026/B/9102482",
+      "bidWindow": "18 Days Open",
+      "statutoryPreRequisite": "Requires Green SPCB Consent, BIS CRS & CPCB E-Waste Registration",
+      "sector": "electronics"
+    },
+    {
+      "code": "TND-EL-502",
+      "name": "Supply of BIS-Certified IoT Sensor Hubs & Power Controllers",
+      "buyer": "Ministry of Electronics & Information Technology (MeitY) — CPPP",
+      "tenderValue": "₹95.00 Lakh",
+      "emdExemption": "100% MSE Exempt",
+      "portalRef": "CPPP/2026/MEITY/6104",
+      "bidWindow": "24 Days Open",
+      "statutoryPreRequisite": "Requires 100% Statutory Clearances & ISO 9001 Certification",
+      "sector": "electronics"
+    },
+    {
+      "code": "TND-RN-601",
+      "name": "Supply of High-Efficiency Bifacial Solar PV Modules",
+      "buyer": "Solar Energy Corporation of India (SECI) — GeM Portal",
+      "tenderValue": "₹3.20 Crore",
+      "emdExemption": "100% MSE Exempt",
+      "portalRef": "GEM/2026/B/7201944",
+      "bidWindow": "25 Days Open",
+      "statutoryPreRequisite": "Requires MNRE ALMM Enlistment & CEIG Energisation Approval",
+      "sector": "renewable"
+    },
+    {
+      "code": "TND-RN-602",
+      "name": "Balance of Plant (BoP) & Grid Inverter Systems for Green Hydrogen Pilot",
+      "buyer": "NTPC Renewable Energy Limited — CPPP Portal",
+      "tenderValue": "₹4.50 Crore",
+      "emdExemption": "MSE Technical Qualification Relaxed",
+      "portalRef": "CPPP/2026/NTPC/8842",
+      "bidWindow": "30 Days Open",
+      "statutoryPreRequisite": "Requires SPCB White Undertaking & DISCOM Grid Synchronization",
+      "sector": "renewable"
+    },
+    {
+      "code": "TND-PH-701",
+      "name": "Supply of Essential Generic Tablets & Schedule-M Formulations",
+      "buyer": "Pharmaceuticals & Medical Devices Bureau of India (PMBI — Jan Aushadhi)",
+      "tenderValue": "₹2.85 Crore",
+      "emdExemption": "100% MSE Exempt",
+      "portalRef": "GEM/2026/B/8410291",
+      "bidWindow": "20 Days Open",
+      "statutoryPreRequisite": "Requires CDSCO Schedule-M Drug Licence & Red SPCB Consent",
+      "sector": "pharma"
+    },
+    {
+      "code": "TND-PH-702",
+      "name": "Rate Contract for Parenteral Infusions & Sterile APIs",
+      "buyer": "AIIMS Central Procurement Cell (Ministry of Health) — CPPP",
+      "tenderValue": "₹3.90 Crore",
+      "emdExemption": "MSE Purchase Preference (15% Band)",
+      "portalRef": "CPPP/2026/AIIMS/4421",
+      "bidWindow": "28 Days Open",
+      "statutoryPreRequisite": "Requires CDSCO Form-25/28 & WHO-GMP Certification",
+      "sector": "pharma"
+    },
+    {
+      "code": "TND-DC-801",
+      "name": "High-Density Server Racks, PDU & Precision Cooling Infrastructure",
+      "buyer": "National Informatics Centre (NIC MeghRaj Cloud) — GeM Portal",
+      "tenderValue": "₹2.10 Crore",
+      "emdExemption": "100% MSE Exempt",
+      "portalRef": "GEM/2026/B/9541029",
+      "bidWindow": "21 Days Open",
+      "statutoryPreRequisite": "Requires DoT Saral Sanchar Registration & Green SPCB Consent",
+      "sector": "datacenter"
+    },
+    {
+      "code": "TND-DC-802",
+      "name": "Tier-III Hyperscale Facility Colocation & Disaster Recovery Services",
+      "buyer": "Unique Identification Authority of India (UIDAI) — CPPP",
+      "tenderValue": "₹5.50 Crore",
+      "emdExemption": "MSE Price Preference (15% Band)",
+      "portalRef": "CPPP/2026/UIDAI/7109",
+      "bidWindow": "30 Days Open",
+      "statutoryPreRequisite": "Requires 100% Approved Factory, Dual DISCOM Feeder & DoT OSP Clearance",
+      "sector": "datacenter"
+    }
+  ]
+}
+

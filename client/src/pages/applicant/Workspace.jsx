@@ -18,9 +18,11 @@ import SkeletonCard from '../../components/SkeletonCard';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
 import RouteTrack from '../../components/RouteTrack';
+import VerifiableNocModal from '../../components/VerifiableNocModal';
 import {
   ArrowLeft, Clock, Upload, CheckCircle2, AlertTriangle,
-  Send, Sparkles, User as UserIcon, RefreshCw, Check, RotateCcw, Circle, Copy, FileText
+  Send, Sparkles, User as UserIcon, RefreshCw, Check, RotateCcw, Circle, Copy, FileText,
+  ShieldCheck, FileCheck2, Hash
 } from 'lucide-react';
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -77,7 +79,8 @@ export default function Workspace() {
   const [replyText, setReplyText] = useState('');
   const now = useSharedTimer();
   const [mobileTab, setMobileTab] = useState('documents');
-  const [checkingDoc, setCheckingDoc] = useState(null);
+  const [scanningOcr, setScanningOcr] = useState(null); // 'mismatched' | 'verified' | null
+  const [showNocModal, setShowNocModal] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -166,8 +169,7 @@ export default function Workspace() {
         setOriginalDocsState(initialDocs);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error(err);
+      .catch(() => {
         if (active) { setError(true); setLoading(false); }
       });
 
@@ -207,7 +209,7 @@ export default function Workspace() {
           setMessages(res.data.messages);
         }
       })
-      .catch(console.error);
+      .catch(() => {});
   };
 
   const handleSubmit = () => {
@@ -228,14 +230,15 @@ export default function Workspace() {
         setSubmitSuccess(true);
         setSubmitting(false);
       })
-      .catch((err) => { console.error(err); setSubmitting(false); });
+      .catch(() => {
+        setSubmitting(false);
+      });
   };
 
   const handleReset = () => {
     if (!originalApproval) return;
     Object.values(debounceTimersRef.current).forEach(clearTimeout);
     debounceTimersRef.current = {};
-    setCheckingDoc(null);
     setApproval({ ...originalApproval, status: 'query_raised', activityLog: originalApproval.activityLog });
     setAllApprovals((prev) => prev.map((a) => (a.id === id ? { ...a, status: 'query_raised' } : a)));
     // Deep-copy each doc entry so post-reset edits cannot mutate the original snapshot.
@@ -249,6 +252,80 @@ export default function Workspace() {
     setSuccessBanner('');
   };
 
+  const handleSimulateOcr = (mode) => {
+    setScanningOcr(mode);
+    setTimeout(() => {
+      if (!approval?.requiredDocs) {
+        setScanningOcr(null);
+        return;
+      }
+      const targetDocType =
+        approval.requiredDocs.find((r) => r.docType.toLowerCase().includes('lease') || r.docType.toLowerCase().includes('plan'))?.docType ||
+        approval.requiredDocs[0]?.docType;
+
+      if (!targetDocType) {
+        setScanningOcr(null);
+        return;
+      }
+
+      if (mode === 'mismatched') {
+        const updated = {
+          ...docsState,
+          [targetDocType]: {
+            docType: targetDocType,
+            fileName: 'Lease_Deed_Udhna_Registered.pdf',
+            declaredFields: {
+              address: 'Plot 22, Udhna, Surat',
+              pan: 'AABCS1429B',
+              unitSize: '500 sq.m',
+            },
+            docHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            ocrVerification: {
+              status: 'mismatch',
+              field: 'Premises Address',
+              expected: activeBusiness?.address || 'Plot 14, GIDC Sachin, Surat',
+              found: 'Plot 22, Udhna, Surat',
+              message: 'Address discrepancy detected between scanned title deed and Master Application profile.',
+            },
+          },
+        };
+        latestDocsRef.current = updated;
+        setDocsState(updated);
+      } else {
+        const updated = {
+          ...docsState,
+          [targetDocType]: {
+            docType: targetDocType,
+            fileName: 'GIDC_Sachin_Plot14_Deed_Executed.pdf',
+            declaredFields: {
+              address: activeBusiness?.address || 'Plot 14, GIDC Sachin, Surat',
+              pan: activeBusiness?.pan || 'AABCS1429B',
+              unitSize: activeBusiness?.unitSize || '500 sq.m',
+            },
+            docHash: 'a7104b2c18fb209e84560242ac110003b102948ca92b11ef84560242ac110004',
+            ocrVerification: {
+              status: 'verified',
+              message: 'All forensic fields verified 100% against GIDC Master Industrial Cadastre.',
+            },
+          },
+        };
+        // Ensure all required docs have a valid mock file so user can submit
+        approval.requiredDocs.forEach((r) => {
+          if (!updated[r.docType]) {
+            updated[r.docType] = {
+              docType: r.docType,
+              fileName: `${r.docType.replace(/\s+/g, '_')}_Executed.pdf`,
+              docHash: 'f41d8cd98f00b204e9800998ecf8427e',
+            };
+          }
+        });
+        latestDocsRef.current = updated;
+        setDocsState(updated);
+      }
+      setScanningOcr(null);
+    }, 350);
+  };
+
   const isEditable = Boolean(approval && ['query_raised', 'not_started'].includes(approval.status));
   const isLocked = !isEditable;
 
@@ -260,6 +337,11 @@ export default function Workspace() {
     if (missingDocs.length > 0) {
       const names = missingDocs.map((r) => r.label).join(', ');
       return { canSubmit: false, reason: `Missing required document${missingDocs.length > 1 ? 's' : ''}: ${names}.` };
+    }
+
+    const hasMismatch = Object.values(docsState).some((d) => d?.ocrVerification?.status === 'mismatch');
+    if (hasMismatch) {
+      return { canSubmit: false, reason: 'Address mismatch detected on uploaded Deed. Resolve discrepancy before submitting.' };
     }
 
     return { canSubmit: true, reason: '' };
@@ -424,6 +506,16 @@ export default function Workspace() {
             <div className={`font-mono text-sm font-medium flex items-center gap-1.5 ${sla.color}`}>
               <Clock size={16} /> {sla.text}
             </div>
+            {approval.status === 'approved' && (
+              <button
+                type="button"
+                onClick={() => setShowNocModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-all active:scale-[0.98]"
+              >
+                <ShieldCheck size={14} />
+                <span>View Verifiable NOC</span>
+              </button>
+            )}
             <RouteTrack currentStep={currentStep} />
           </div>
         </div>
@@ -451,7 +543,7 @@ export default function Workspace() {
             {allApprovals.map((a) => (
               <button
                 key={a.id}
-                onClick={() => navigate(`/app/approvals/${a.id}`)}
+                onClick={() => navigate(`/app/workspace/${a.id}`)}
                 className={`w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 transition-colors ${
                   a.id === id ? 'bg-primary/10 text-[#0A1128] font-medium' : 'hover:bg-gray-50 text-gray-600'
                 }`}
@@ -476,11 +568,58 @@ export default function Workspace() {
             </div>
 
             {['submitted', 'under_review', 'approved'].includes(approval.status) && (
-              <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-900 rounded p-4 text-sm flex gap-3 shadow-sm">
-                <AlertTriangle size={18} className="shrink-0 text-blue-600 mt-0.5" />
-                <div>
-                  <strong>Application submitted. Under regulatory officer review.</strong>
-                  <div className="mt-1 text-blue-700/80">Document pack is locked. You can only view the files.</div>
+              <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl p-4 text-sm flex items-start justify-between gap-3 shadow-xs">
+                <div className="flex gap-3">
+                  <AlertTriangle size={18} className="shrink-0 text-blue-600 mt-0.5" />
+                  <div>
+                    <strong>Application {approval.status === 'approved' ? 'approved' : 'submitted'}. Under statutory regulatory tracking.</strong>
+                    <div className="mt-1 text-blue-700/80">Document pack is locked. You can view the verified credentials below.</div>
+                  </div>
+                </div>
+                {approval.status === 'approved' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowNocModal(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-all shrink-0"
+                  >
+                    <ShieldCheck size={14} />
+                    <span>View Verifiable NOC</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Smart Document Scan (OCR Demo Simulator) */}
+            {isEditable && (
+              <div className="mb-6 p-4 bg-slate-50 border border-slate-200/90 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                    <Sparkles size={14} className="text-teal-600" />
+                    <span>Smart Document Scan (OCR Demo Simulator)</span>
+                  </div>
+                  {scanningOcr && (
+                    <span className="font-mono text-[10px] text-teal-700 font-bold bg-teal-50 border border-teal-200 px-2 py-0.5 rounded animate-pulse">
+                      Scanning &amp; Extracting Forensic Data (350ms)...
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={Boolean(scanningOcr)}
+                    onClick={() => handleSimulateOcr('mismatched')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 border border-amber-300 text-amber-900 hover:bg-amber-100 transition-all flex items-center gap-1.5 active:scale-[0.98] shadow-2xs"
+                  >
+                    <span>Simulate Mismatched Deed Scan (Plot 22, Udhna)</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={Boolean(scanningOcr)}
+                    onClick={() => handleSimulateOcr('verified')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-50 border border-teal-300 text-teal-900 hover:bg-teal-100 transition-all flex items-center gap-1.5 active:scale-[0.98] shadow-2xs"
+                  >
+                    <span>Simulate Verified GIDC Deed Scan (Plot 14, Sachin)</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -533,29 +672,147 @@ export default function Workspace() {
                     )}
 
                     {doc && (
-                      <div className="bg-slate-50 border border-slate-200/75 rounded-xl p-4 flex items-center justify-between shadow-sm">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <FileText size={16} strokeWidth={2.5} />
+                      <div className="space-y-2">
+                        <div className="bg-slate-50 border border-slate-200/75 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                              <FileText size={16} strokeWidth={2.5} />
+                            </div>
+                            <div className="truncate min-w-0">
+                              <div className="text-sm font-bold text-slate-900 truncate">{doc.fileName}</div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Uploaded</span>
+                                {doc.docHash && (
+                                  <span className="font-mono text-[10px] text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                    SHA: {doc.docHash.slice(0, 14)}…
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="truncate min-w-0">
-                            <div className="text-sm font-bold text-slate-900 truncate">{doc.fileName}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 mt-0.5">Uploaded</div>
-                          </div>
+                          {isEditable && (
+                            <button
+                              onClick={() => {
+                                setDocsState((prev) => {
+                                  const updated = { ...prev, [req.docType]: null };
+                                  latestDocsRef.current = updated;
+                                  return updated;
+                                });
+                              }}
+                              className="text-xs font-bold text-slate-500 hover:text-slate-900 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm hover:bg-slate-50 active:scale-[0.97] transition-all duration-75 shrink-0 ml-3"
+                            >
+                              Remove
+                            </button>
+                          )}
                         </div>
-                        {isEditable && (
-                          <button
-                            onClick={() => {
-                              setDocsState((prev) => {
-                                const updated = { ...prev, [req.docType]: null };
-                                latestDocsRef.current = updated;
-                                return updated;
-                              });
-                            }}
-                            className="text-xs font-bold text-slate-500 hover:text-slate-900 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm hover:bg-slate-50 active:scale-[0.97] transition-all duration-75 shrink-0 ml-3"
-                          >
-                            Remove
-                          </button>
+
+                        {/* OCR Verification Forensic Result */}
+                        {doc.ocrVerification?.status === 'mismatch' && (
+                          <div className="p-3.5 bg-amber-50/90 border border-amber-300 rounded-xl text-xs text-amber-950 space-y-3 shadow-2xs">
+                            <div className="flex items-center justify-between gap-2 border-b border-amber-200/80 pb-2">
+                              <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                                <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+                                <span>Forensic OCR Cadastral Parity Audit (Discrepancy Detected)</span>
+                              </div>
+                              <span className="font-mono text-[10px] font-bold bg-amber-200 text-amber-950 px-2 py-0.5 rounded">
+                                §14(b) Discrepancy
+                              </span>
+                            </div>
+
+                            {/* Side-by-Side Comparison Table */}
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-[11px] border-collapse">
+                                <thead>
+                                  <tr className="border-b border-amber-200/70 text-[10px] uppercase font-bold text-amber-800">
+                                    <th className="py-1 px-1.5 font-mono">Cadastral Field</th>
+                                    <th className="py-1 px-1.5">Master GIDC Record</th>
+                                    <th className="py-1 px-1.5">Uploaded Deed (OCR)</th>
+                                    <th className="py-1 px-1.5 text-right">Audit Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-amber-200/50">
+                                  <tr className="bg-amber-100/40">
+                                    <td className="py-1.5 px-1.5 font-medium text-amber-950">Premises Address</td>
+                                    <td className="py-1.5 px-1.5 font-mono font-medium text-slate-800">
+                                      {doc.ocrVerification.expected || activeBusiness?.address || 'Plot 14, GIDC Sachin, Surat'}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 font-mono font-bold text-rose-700 bg-rose-50/80 px-1 rounded">
+                                      {doc.ocrVerification.found}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 text-right">
+                                      <span className="font-mono font-bold text-[10px] bg-rose-100 text-rose-800 border border-rose-300 px-1.5 py-0.5 rounded">
+                                        MISMATCH (Flagged)
+                                      </span>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-1.5 px-1.5 font-medium text-amber-950">Entity PAN</td>
+                                    <td className="py-1.5 px-1.5 font-mono text-slate-700">
+                                      {activeBusiness?.pan || 'AABCS1429B'}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 font-mono text-slate-700">
+                                      {doc.declaredFields?.pan || activeBusiness?.pan || 'AABCS1429B'}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 text-right">
+                                      <span className="font-mono font-bold text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded">
+                                        MATCHED (99.8%)
+                                      </span>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-1.5 px-1.5 font-medium text-amber-950">Plot Dimensions</td>
+                                    <td className="py-1.5 px-1.5 font-mono text-slate-700">
+                                      {activeBusiness?.unitSize || '500 sq.m'}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 font-mono text-slate-700">
+                                      {doc.declaredFields?.unitSize || '500 sq.m'}
+                                    </td>
+                                    <td className="py-1.5 px-1.5 text-right">
+                                      <span className="font-mono font-bold text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded">
+                                        MATCHED (100%)
+                                      </span>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+
+                            <p className="text-[11px] text-amber-900 leading-snug pt-1 border-t border-amber-200/60">
+                              <strong>Statutory Rule §14(b) Fire Prevention Act:</strong> Discrepancy between Registered Industrial Plot and Title Deed will result in immediate rejection during physical verification. Upload the revised deed or rectify registration.
+                            </p>
+                          </div>
+                        )}
+
+                        {doc.ocrVerification?.status === 'verified' && (
+                          <div className="p-3 bg-emerald-50/90 border border-emerald-300 rounded-xl text-xs text-emerald-950 space-y-2.5 shadow-2xs">
+                            <div className="flex items-center justify-between gap-2 border-b border-emerald-200/80 pb-2">
+                              <div className="flex items-center gap-1.5 font-bold text-emerald-950">
+                                <ShieldCheck size={16} className="text-emerald-700 shrink-0" />
+                                <span>Forensic Cadastre Audit Passed (100% Parity)</span>
+                              </div>
+                              <span className="font-mono text-[10px] font-bold bg-emerald-200 text-emerald-950 px-2 py-0.5 rounded">
+                                Cadastre Verified
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                              <div className="bg-white/80 p-2 rounded-lg border border-emerald-200/60">
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Verified Cadastral Site</span>
+                                <span className="font-mono font-bold text-slate-900">{doc.declaredFields?.address || activeBusiness?.address || 'Plot 14, GIDC Sachin, Surat'}</span>
+                              </div>
+                              <div className="bg-white/80 p-2 rounded-lg border border-emerald-200/60">
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Cryptographic Fingerprint</span>
+                                <span className="font-mono text-[10px] text-slate-700 truncate block">
+                                  SHA-256: {doc.docHash || 'a7104b2c18fb209e84560242ac110003b102948ca92b11ef84560242ac110004'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <p className="text-[10px] text-emerald-800 flex items-center gap-1.5">
+                              <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />
+                              <span>Deed premises match GIDC Master Cadastre records. Cleared for statutory officer inspection.</span>
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}
@@ -788,6 +1045,15 @@ export default function Workspace() {
           </div>
         </div>
       </div>
+
+      {/* Verifiable Digital NOC Certificate Modal */}
+      {showNocModal && approval && (
+        <VerifiableNocModal
+          approval={approval}
+          business={activeBusiness}
+          onClose={() => setShowNocModal(false)}
+        />
+      )}
     </div>
   );
 }

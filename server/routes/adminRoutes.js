@@ -271,7 +271,8 @@ router.get('/inspections', protect, (req, res) => {
 // POST /api/admin/inspections/schedule — Confirm combined inspection schedule
 router.post('/inspections/schedule', protect, (req, res) => {
   try {
-    const { id, slotDate } = req.body;
+    const id = req.body.id || req.body.inspectionId;
+    const slotDate = req.body.slotDate;
     const db = getDB();
     const proposal = db.inspections.find((i) => i.id === id);
 
@@ -299,7 +300,7 @@ router.post('/inspections/schedule', protect, (req, res) => {
     }
 
     saveDB();
-    res.json(proposal);
+    res.json({ ...proposal, inspection: proposal });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

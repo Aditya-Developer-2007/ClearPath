@@ -158,7 +158,7 @@ router.post('/:id/submit', protect, (req, res) => {
       note: 'All required documents submitted with statutory declaration',
     });
 
-    res.json({ success: true });
+    res.json({ success: true, approval: getApprovalComposite(id) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

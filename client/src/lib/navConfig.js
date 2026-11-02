@@ -9,7 +9,6 @@ export const navConfig = {
   officer: [
     { name: 'Queue', path: '/officer/queue', icon: Inbox },
     { name: 'Escalated', path: '/officer/escalated', icon: AlertCircle },
-    { name: 'Messages', path: '/officer/messages', icon: MessageSquare },
   ],
   admin: [
     { name: 'Analytics', path: '/admin/analytics', icon: Activity },

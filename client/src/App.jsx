@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { BusinessProvider } from './context/BusinessContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -12,6 +12,8 @@ const ChecklistResult = React.lazy(() => import('./pages/public/ChecklistResult'
 const NotFound = React.lazy(() => import('./pages/public/NotFound'));
 const ApplicantDashboard = React.lazy(() => import('./pages/applicant/Dashboard'));
 const ApplicantWorkspace = React.lazy(() => import('./pages/applicant/Workspace'));
+const MyApprovals = React.lazy(() => import('./pages/applicant/MyApprovals'));
+const MessagesHub = React.lazy(() => import('./pages/applicant/MessagesHub'));
 const OfficerDashboard = React.lazy(() => import('./pages/officer/Dashboard'));
 const OfficerReview = React.lazy(() => import('./pages/officer/Review'));
 const OfficerEscalated = React.lazy(() => import('./pages/officer/Escalated'));
@@ -27,6 +29,11 @@ const RootRedirect = () => {
   if (user.role === 'officer') return <Navigate to="/officer/queue" replace />;
   if (user.role === 'admin') return <Navigate to="/admin/analytics" replace />;
   return <Navigate to="/login" replace />;
+};
+
+const ApprovalRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/app/workspace/${id}`} replace />;
 };
 
 export default function App() {
@@ -47,13 +54,19 @@ export default function App() {
                 <Route path="dashboard" element={
                   <ProtectedRoute allowedRoles={['applicant']}><ApplicantDashboard /></ProtectedRoute>
                 } />
+                <Route path="approvals" element={
+                  <ProtectedRoute allowedRoles={['applicant']}><MyApprovals /></ProtectedRoute>
+                } />
                 <Route path="approvals/:id" element={
-                  <ProtectedRoute allowedRoles={['applicant']}><ApplicantWorkspace /></ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['applicant']}><ApprovalRedirect /></ProtectedRoute>
                 } />
                 <Route path="workspace/:id" element={
                   <ProtectedRoute allowedRoles={['applicant']}><ApplicantWorkspace /></ProtectedRoute>
                 } />
-                <Route path="*" element={<ProtectedRoute allowedRoles={['applicant']}><div>Placeholder</div></ProtectedRoute>} />
+                <Route path="messages" element={
+                  <ProtectedRoute allowedRoles={['applicant']}><MessagesHub /></ProtectedRoute>
+                } />
+                <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
                 
               </Route>
               <Route path="/officer" element={<AppShell />}>
@@ -66,7 +79,7 @@ export default function App() {
                 <Route path="escalated" element={
                   <ProtectedRoute allowedRoles={['officer']}><OfficerEscalated /></ProtectedRoute>
                 } />
-                <Route path="*" element={<ProtectedRoute allowedRoles={['officer']}><div>Placeholder</div></ProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/officer/queue" replace />} />
               </Route>
               <Route path="/admin" element={<AppShell />}>
                 <Route index element={<Navigate to="/admin/analytics" replace />} />
@@ -76,7 +89,7 @@ export default function App() {
                 <Route path="inspections" element={
                   <ProtectedRoute allowedRoles={['admin']}><AdminInspections /></ProtectedRoute>
                 } />
-                <Route path="*" element={<ProtectedRoute allowedRoles={['admin']}><div>Placeholder</div></ProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/admin/analytics" replace />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

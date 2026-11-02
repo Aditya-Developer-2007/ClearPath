@@ -13,6 +13,46 @@ const STEPS = [
   { key: 'stage', label: 'Stage' },
 ];
 
+const SECTOR_OPTIONS = [
+  'Automobile, EV & Battery Assembly',
+  'Electronics, PCB & Semiconductor Assembly',
+  'Renewable Energy, Solar PV & Green Hydrogen',
+  'Pharmaceuticals, Bulk Drugs & Biotech',
+  'Specialty Chemicals & Solvents',
+  'Food Processing & Cold Chain',
+  'Textiles, Apparel & Technical Textiles',
+  'IT Infra, Cloud & Hyperscale Data Centers',
+  'Other (Custom Sector / Industry)',
+];
+
+const STATE_OPTIONS = [
+  'Gujarat',
+  'Maharashtra',
+  'Delhi',
+  'Uttar Pradesh',
+  'Tamil Nadu',
+  'Karnataka',
+  'Telangana',
+  'Haryana',
+  'Rajasthan',
+  'Uttarakhand',
+  'Other (Custom State)',
+];
+
+function matchSectorOption(val) {
+  if (!val) return null;
+  const s = String(val).toLowerCase();
+  if (s.includes('auto') || s.includes('ev') || s.includes('motor')) return 'Automobile, EV & Battery Assembly';
+  if (s.includes('semi') || s.includes('pcb') || s.includes('electr')) return 'Electronics, PCB & Semiconductor Assembly';
+  if (s.includes('solar') || s.includes('renew') || s.includes('hydrogen')) return 'Renewable Energy, Solar PV & Green Hydrogen';
+  if (s.includes('pharma') || s.includes('drug') || s.includes('biotech')) return 'Pharmaceuticals, Bulk Drugs & Biotech';
+  if (s.includes('chem') || s.includes('solvent')) return 'Specialty Chemicals & Solvents';
+  if (s.includes('food') || s.includes('dairy') || s.includes('agro') || s.includes('cold')) return 'Food Processing & Cold Chain';
+  if (s.includes('textile') || s.includes('apparel') || s.includes('garment')) return 'Textiles, Apparel & Technical Textiles';
+  if (s.includes('data') || s.includes('cloud') || s.includes('server')) return 'IT Infra, Cloud & Hyperscale Data Centers';
+  return val;
+}
+
 export default function Wizard() {
   const { state: routerState } = useLocation();
   const navigate = useNavigate();
@@ -24,7 +64,7 @@ export default function Wizard() {
   const [returnToConfirm, setReturnToConfirm] = useState(false);
 
   const initialData = {
-    sector: routerState?.prefill?.sector || null,
+    sector: matchSectorOption(routerState?.prefill?.sector) || null,
     customSector: '',
     state: routerState?.prefill?.state || null,
     customState: '',
@@ -113,8 +153,7 @@ export default function Wizard() {
           newBusiness: created || businessObj,
         },
       });
-    } catch (e) {
-      console.error(e);
+    } catch {
       setLoading(false);
     }
   };
@@ -183,7 +222,7 @@ export default function Wizard() {
           <div className="w-full">
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 mb-6">What is your sector?</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-              {['Textile', 'Chemical', 'Food Processing', 'Electronics', 'General Manufacturing', 'Pharmaceuticals & Medical Devices', 'Other (Custom Sector / Industry)'].map(s => (
+              {SECTOR_OPTIONS.map(s => (
                 <OptionCard key={s} label={s} selected={data.sector === s} onClick={() => dispatch({ type: 'SET', field: 'sector', value: s })} />
               ))}
             </div>
@@ -206,11 +245,9 @@ export default function Wizard() {
                 <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-1.5">State</label>
                 <select className="w-full border border-slate-300 p-3 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 shadow-sm text-slate-900" value={data.state || ''} onChange={e => dispatch({ type: 'SET', field: 'state', value: e.target.value })}>
                   <option value="">Select state...</option>
-                  <option value="Gujarat">Gujarat</option>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="Tamil Nadu">Tamil Nadu</option>
-                  <option value="Uttar Pradesh">Uttar Pradesh</option>
-                  <option value="Other (Custom State)">Other (Custom State)</option>
+                  {STATE_OPTIONS.map(st => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
                 </select>
                 {data.state === 'Other (Custom State)' && (
                   <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">

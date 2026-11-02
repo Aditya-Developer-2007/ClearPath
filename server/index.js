@@ -73,5 +73,5 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`[ClearPath Server] running on http://localhost:${PORT}`);
+  process.stdout.write("[ClearPath Server] running on port " + PORT + "\n");
 });

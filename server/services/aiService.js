@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { KNOWLEDGE_BASE } from '../engine/statutoryEngine.js';
+import { KNOWLEDGE_BASE, classifyBusinessIntent } from '../engine/statutoryEngine.js';
 
 let genAI = null;
 
@@ -17,87 +17,15 @@ export const initAI = () => {
 };
 
 export const extractIntakeData = async (text) => {
-  const lower = (text || '').toLowerCase();
-
-  // 1. Stage
-  let stage = null;
-  if (/(starting|start|new|open|setting up|shuru|kholna|kholni|setup)/i.test(lower)) {
-    stage = 'New';
-  } else if (/(expand|expansion|badhana)/i.test(lower)) {
-    stage = 'Expansion';
-  } else if (/(renew|renewal)/i.test(lower)) {
-    stage = 'Renewal';
+  if (!text || !text.trim()) {
+    return { ok: false, data: null };
   }
 
-  // 2. Sector
-  let sector = null;
-  if (lower.includes('textile')) {
-    sector = 'Textile';
-  } else if (lower.includes('chemical')) {
-    sector = 'Chemicals';
-  } else if (lower.includes('food')) {
-    sector = 'Food Processing';
-  } else if (lower.includes('engineering') || lower.includes('manufacturing')) {
-    sector = 'Manufacturing';
-  } else if (lower.includes('electronics')) {
-    sector = 'Electronics';
-  }
-
-  // 3. Location
-  let city = null;
-  let state = null;
-  if (lower.includes('surat')) {
-    city = 'Surat';
-    state = 'Gujarat';
-  } else if (lower.includes('ahmedabad')) {
-    city = 'Ahmedabad';
-    state = 'Gujarat';
-  } else if (lower.includes('vadodara')) {
-    city = 'Vadodara';
-    state = 'Gujarat';
-  } else if (lower.includes('rajkot')) {
-    city = 'Rajkot';
-    state = 'Gujarat';
-  }
-
-  // 4. Investment
-  let investmentLakh = null;
-  const croreMatch = lower.match(/(?:(?:rs\.?|inr|₹)\s*)?(\d+(?:\.\d+)?)\s*(?:crore|cr)\b/i);
-  if (croreMatch) {
-    investmentLakh = Math.round(parseFloat(croreMatch[1]) * 100);
-  } else {
-    const lakhMatch = lower.match(/(?:(?:rs\.?|inr|₹)\s*)?(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|lac|lacs|l)\b/i);
-    if (lakhMatch) {
-      investmentLakh = Math.round(parseFloat(lakhMatch[1]));
-    }
-  }
-
-  // 5. Employees / Workers
-  let employees = null;
-  const workerMatch = lower.match(/(\d+)\s*(?:workers|worker|employees|employee|people|log|staff|shramik|karmachari)\b/i);
-  if (workerMatch) {
-    employees = parseInt(workerMatch[1], 10);
-  }
-
-  // 6. Hazardous
-  let hazardous = null;
-  if (lower.includes('hazardous') || lower.includes('chemical')) {
-    hazardous = true;
-  }
-
-  const hasAnyParsed = sector !== null || city !== null || state !== null || investmentLakh !== null || employees !== null || hazardous !== null || stage !== null;
-
+  const parsed = classifyBusinessIntent(text);
   return {
-    ok: hasAnyParsed,
-    data: hasAnyParsed ? {
-      sector,
-      state,
-      city,
-      investmentLakh,
-      employees,
-      hazardous,
-      stage,
-    } : null,
+    ok: true,
+    data: parsed,
+    confidence: parsed.classificationConfidence,
   };
 };
 

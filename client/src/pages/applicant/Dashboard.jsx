@@ -7,6 +7,8 @@ import EmptyState from '../../components/EmptyState';
 import SkeletonCard from '../../components/SkeletonCard';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
+import StatutorySimulator from '../../components/StatutorySimulator';
+import VerifiableNocModal from '../../components/VerifiableNocModal';
 import { ShieldAlert, Info, Play, Eye, MessageSquareReply, CheckCircle2, Building2, ChevronDown, Plus, Clock, AlertTriangle, ShieldCheck, Activity, Check, Circle, AlertCircle, FileCheck2, UserRound, Lock, Unlock, Briefcase, ExternalLink, X } from 'lucide-react';
 
 function bucketOf(r, now) {
@@ -40,6 +42,7 @@ export default function ApplicantDashboard() {
   const [schemesExpanded, setSchemesExpanded] = useState(true);
   const [tendersExpanded, setTendersExpanded] = useState(true);
   const [selectedBidTender, setSelectedBidTender] = useState(null);
+  const [selectedNocApproval, setSelectedNocApproval] = useState(null);
   const [bidNotification, setBidNotification] = useState(null);
 
   const schemes = useMemo(() => {
@@ -78,10 +81,10 @@ export default function ApplicantDashboard() {
       .then(res => {
         const appData = res.data.applications[0] ? { ...res.data.applications[0] } : null;
         if (appData && activeBusiness) {
-          const isAliceDefault = activeBusiness.id === 'b1' ||
+          const isDefaultUnit = activeBusiness.id === 'b1' ||
             (activeBusiness.sector?.toLowerCase().includes('textile') && activeBusiness.city?.toLowerCase().includes('surat'));
 
-          if (!isAliceDefault) {
+          if (!isDefaultUnit) {
             appData.approvalRequests = generateApprovalsForBusiness(activeBusiness).map(a => ({
               ...a,
               status: 'not_started', // ensure all are not_started for new businesses
@@ -435,6 +438,9 @@ export default function ApplicantDashboard() {
         </div>
       )}
 
+      {/* Interactive What-If Statutory Threshold Simulator */}
+      <StatutorySimulator baselineBusiness={activeBusiness || data} />
+
       {/* Approvals Cards List */}
       <div className="space-y-6 pt-2 stagger-4">
         {(() => {
@@ -455,7 +461,7 @@ export default function ApplicantDashboard() {
                   return (
                     <div
                       key={r.id}
-                      onClick={() => navigate(`/app/approvals/${r.id}`)}
+                      onClick={() => navigate(`/app/workspace/${r.id}`)}
                       className="group cursor-pointer bg-white border border-slate-200/80 hover:border-teal-500/50 rounded-xl p-5 flex flex-col md:flex-row gap-4 md:gap-5 md:items-center justify-between shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 min-w-0 border-l-4 border-l-transparent hover:border-l-teal-500 active:scale-[0.99] relative overflow-hidden"
                     >
                       <div className={`absolute top-0 left-0 bottom-0 w-[4px] ${
@@ -535,25 +541,40 @@ export default function ApplicantDashboard() {
                         )}
                       </div>
                       
-                      <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-3 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0 shrink-0">
+                      <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-2.5 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0 shrink-0">
                         <div className={`font-mono tabular-nums tracking-tight text-xs font-bold flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 ${sla.color}`}>
                           <Clock size={12} className={sla.isOverdue ? 'text-rose-600' : 'text-slate-400'} /> {sla.text}
                         </div>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/app/approvals/${r.id}`);
-                          }}
-                          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold active:scale-[0.97] transition-all duration-75 ease-out focus-visible:ring-2 focus-visible:ring-offset-1 focus:outline-none shrink-0 shadow-sm ${
-                            r.status === 'not_started' ? 'bg-slate-900 text-white hover:bg-slate-800' :
-                            r.status === 'query_raised' ? 'bg-sky-600 text-white hover:bg-sky-700' :
-                            'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-                          }`}
-                        >
-                          {r.status === 'not_started' ? <><Play size={14} /> Start Application</> :
-                           r.status === 'query_raised' ? <><MessageSquareReply size={14} /> Fix Query</> :
-                           <><Eye size={14} /> View Clearance</>}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {r.status === 'approved' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedNocApproval(r);
+                              }}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-all shadow-2xs active:scale-[0.98]"
+                            >
+                              <ShieldCheck size={13} className="text-emerald-600" />
+                              <span>View NOC</span>
+                            </button>
+                          )}
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/app/workspace/${r.id}`);
+                            }}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold active:scale-[0.97] transition-all duration-75 ease-out focus-visible:ring-2 focus-visible:ring-offset-1 focus:outline-none shrink-0 shadow-sm ${
+                              r.status === 'not_started' ? 'bg-slate-900 text-white hover:bg-slate-800' :
+                              r.status === 'query_raised' ? 'bg-sky-600 text-white hover:bg-sky-700' :
+                              'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                            }`}
+                          >
+                            {r.status === 'not_started' ? <><Play size={14} /> Start Application</> :
+                             r.status === 'query_raised' ? <><MessageSquareReply size={14} /> Fix Query</> :
+                             <><Eye size={14} /> View Clearance</>}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -561,6 +582,11 @@ export default function ApplicantDashboard() {
               </div>
             ));
         })()}
+
+        {/* Interactive "What-If" Statutory Threshold Simulator */}
+        <div className="mt-10">
+          <StatutorySimulator baselineBusiness={activeBusiness || data} />
+        </div>
 
         {/* Matched Government Support & Subsidies */}
         {schemes.length > 0 && (
@@ -920,6 +946,15 @@ export default function ApplicantDashboard() {
               <X size={14} />
             </button>
           </div>
+        )}
+
+        {/* Verifiable Digital NOC Modal */}
+        {selectedNocApproval && (
+          <VerifiableNocModal
+            approval={selectedNocApproval}
+            business={activeBusiness}
+            onClose={() => setSelectedNocApproval(null)}
+          />
         )}
       </div>
     </div>

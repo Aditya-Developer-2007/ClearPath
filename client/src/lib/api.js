@@ -12,6 +12,9 @@ import {
   calculateCriticalPath,
   TENDERS_CATALOG,
   evaluateGovernmentTenders,
+  classifyBusinessIntent,
+  SECTORS_CATALOG,
+  STATE_PORTALS,
 } from './statutoryEngine.js';
 import { myApplicationsCache } from '../mocks/applicantStore.js';
 import {
@@ -44,16 +47,19 @@ export {
   calculateCriticalPath,
   TENDERS_CATALOG,
   evaluateGovernmentTenders,
+  classifyBusinessIntent,
+  SECTORS_CATALOG,
+  STATE_PORTALS,
 };
 
 export const users = [
   { id: 'u1', name: 'Aarav Mehta', email: 'applicant@demo.com', role: 'applicant', department: 'Textile Operations', deskNo: 'A12' },
-  { id: '1', name: 'Aarav Mehta', email: 'alice@applicant.com', role: 'applicant', department: 'Textile Operations', deskNo: 'A12' },
+  { id: '1', name: 'Aarav Mehta', email: 'applicant@demo.com', role: 'applicant', department: 'Textile Operations', deskNo: 'A12' },
   { id: 'u2', name: 'Vikramaditya Sinh', email: 'officer@demo.com', role: 'officer', department: 'Safety', deskNo: '2' },
-  { id: '2', name: 'Vikramaditya Sinh', email: 'gupta@officer.com', role: 'officer', department: 'Safety', deskNo: '2' },
-  { id: '4', name: 'Vikramaditya Sinh', email: 'bob@officer.com', role: 'officer', department: 'Safety', deskNo: '2' },
+  { id: '2', name: 'Vikramaditya Sinh', email: 'officer@demo.com', role: 'officer', department: 'Safety', deskNo: '2' },
+  { id: '4', name: 'Vikramaditya Sinh', email: 'officer@demo.com', role: 'officer', department: 'Safety', deskNo: '2' },
   { id: 'u3', name: 'Rajeshwari Iyer, IAS', email: 'admin@demo.com', role: 'admin', department: 'Industries & Mines', deskNo: 'C56' },
-  { id: '3', name: 'Rajeshwari Iyer, IAS', email: 'charlie@admin.com', role: 'admin', department: 'Industries & Mines', deskNo: 'C56' },
+  { id: '3', name: 'Rajeshwari Iyer, IAS', email: 'admin@demo.com', role: 'admin', department: 'Industries & Mines', deskNo: 'C56' },
 ];
 
 export function deriveApprovalMetadata(app, state = 'Gujarat') {
@@ -139,95 +145,19 @@ export const intakeAPI = async (text) => {
   if (USE_MOCK) {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const lower = (text || '').toLowerCase();
-
-        // 1. Stage
-        let stage = null;
-        if (/(starting|start|new|open|setting up|shuru|kholna|kholni|setup)/i.test(lower)) {
-          stage = 'New';
-        } else if (/(expand|expansion|badhana)/i.test(lower)) {
-          stage = 'Expansion';
-        } else if (/(renew|renewal)/i.test(lower)) {
-          stage = 'Renewal';
+        if (!text || !text.trim()) {
+          resolve({ data: { ok: false, data: null } });
+          return;
         }
-
-        // 2. Sector (textile, food, chemical, engineering/manufacturing)
-        let sector = null;
-        if (lower.includes('textile')) {
-          sector = 'Textile';
-        } else if (lower.includes('chemical')) {
-          sector = 'Chemicals';
-        } else if (lower.includes('food')) {
-          sector = 'Food Processing';
-        } else if (lower.includes('engineering') || lower.includes('manufacturing')) {
-          sector = 'Manufacturing';
-        } else if (lower.includes('electronics')) {
-          sector = 'Electronics';
-        }
-
-        // 3. Location (Surat, Ahmedabad, Vadodara, Rajkot mapped to Gujarat)
-        let city = null;
-        let state = null;
-        if (lower.includes('surat')) {
-          city = 'Surat';
-          state = 'Gujarat';
-        } else if (lower.includes('ahmedabad')) {
-          city = 'Ahmedabad';
-          state = 'Gujarat';
-        } else if (lower.includes('vadodara')) {
-          city = 'Vadodara';
-          state = 'Gujarat';
-        } else if (lower.includes('rajkot')) {
-          city = 'Rajkot';
-          state = 'Gujarat';
-        }
-
-        // 4. Investment: handle lakh, crore, L
-        let investmentLakh = null;
-        const croreMatch = lower.match(/(?:(?:rs\.?|inr|₹)\s*)?(\d+(?:\.\d+)?)\s*(?:crore|cr)\b/i);
-        if (croreMatch) {
-          investmentLakh = Math.round(parseFloat(croreMatch[1]) * 100);
-        } else {
-          const lakhMatch = lower.match(/(?:(?:rs\.?|inr|₹)\s*)?(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|lac|lacs|l)\b/i);
-          if (lakhMatch) {
-            investmentLakh = Math.round(parseFloat(lakhMatch[1]));
-          }
-        }
-
-        // 5. Workers / Employees: ("12 workers", "12 log")
-        let employees = null;
-        const workerMatch = lower.match(/(\d+)\s*(?:workers|worker|employees|employee|people|log|staff|shramik|karmachari)\b/i);
-        if (workerMatch) {
-          employees = parseInt(workerMatch[1], 10);
-        }
-
-        // 6. Hazardous: "hazardous"/"chemical" => hazardous:true
-        let hazardous = null;
-        if (lower.includes('hazardous') || lower.includes('chemical')) {
-          hazardous = true;
-        }
-
-        const hasAnyParsed = sector !== null || city !== null || state !== null || investmentLakh !== null || employees !== null || hazardous !== null || stage !== null;
-
-        if (hasAnyParsed) {
-          resolve({
-            data: {
-              ok: true,
-              data: {
-                sector,
-                state,
-                city,
-                investmentLakh,
-                employees,
-                hazardous,
-                stage,
-              },
-            },
-          });
-        } else {
-          resolve({ data: { ok: false } });
-        }
-      }, 600);
+        const parsed = classifyBusinessIntent(text);
+        resolve({
+          data: {
+            ok: true,
+            data: parsed,
+            confidence: parsed.classificationConfidence,
+          },
+        });
+      }, 150);
     });
   }
   return api.post('/ai/intake', { text });
@@ -239,6 +169,7 @@ export const submitApplicationAPI = async (data) => {
       setTimeout(() => {
         const approvals = evaluateStatutoryApprovals(data);
         const schemes = evaluateEligibleSchemes(data);
+        const tenderGate = evaluateGovernmentTenders(data, approvals);
         const estimatedDays = approvals.reduce((max, a) => Math.max(max, a.slaDays || 0), 0) || 30;
         resolve({
           data: {
@@ -246,6 +177,8 @@ export const submitApplicationAPI = async (data) => {
             approvals,
             schemes,
             estimatedDays,
+            tenderGate,
+            tenders: tenderGate.tenders,
           },
         });
       }, 600);
@@ -301,7 +234,7 @@ export const getApprovalAPI = async (id) => {
             name: req.name,
             department: req.department,
             status: req.status,
-            assignedOfficerName: req.assignedOfficerName || 'Bob Officer',
+            assignedOfficerName: req.assignedOfficerName || 'Vikramaditya Sinh',
             deskNo: req.deskNo || '2',
             lastActionAt: req.lastActionAt,
             slaDeadline: req.slaDeadline,
@@ -373,7 +306,7 @@ export const getApprovalAPI = async (id) => {
             activityLog: officerStore.activityLogs[id] || [
               { action: 'Application Created', by: 'You', timestamp: new Date(Date.now() - 10 * 86400000).toISOString(), note: '' },
               { action: 'Officer Assigned', by: 'System', timestamp: new Date(Date.now() - 9 * 86400000).toISOString(), note: '' },
-              { action: 'Query Raised', by: 'Bob Officer', timestamp: new Date(Date.now() - 2 * 86400000).toISOString(), note: 'Doc incomplete, NOC mismatch' },
+              { action: 'Query Raised', by: 'Vikramaditya Sinh', timestamp: new Date(Date.now() - 2 * 86400000).toISOString(), note: 'Doc incomplete, NOC mismatch' },
             ],
           },
         });
@@ -479,7 +412,7 @@ export const sendMessageAPI = async (id, text, senderName, senderRole, customMsg
         const newMsg = {
           id: msgId,
           senderRole: senderRole || 'applicant',
-          senderName: senderName || (senderRole === 'officer' ? 'Bob Officer' : 'You'),
+          senderName: senderName || (senderRole === 'officer' ? 'Vikramaditya Sinh' : 'You'),
           text,
           timestamp: new Date().toISOString(),
         };
@@ -526,7 +459,7 @@ export const getOfficerApprovalAPI = async (id) => {
             riskTier: row.riskTier,
             slaDeadline: row.slaDeadline,
             escalated: row.escalated,
-            assignedOfficerName: row.assignedOfficerName || 'Bob Officer',
+            assignedOfficerName: row.assignedOfficerName || 'Vikramaditya Sinh',
             warningsCount: row.warningsCount,
             lastActionAt: row.lastActionAt,
             applicantName: row.applicantName,
@@ -549,7 +482,7 @@ export const officerActionAPI = async (id, { action, note, officerName, msgId })
     return new Promise((resolve) => {
       setTimeout(() => {
         const ts = new Date().toISOString();
-        const byOfficer = officerName || 'Bob Officer';
+        const byOfficer = officerName || 'Vikramaditya Sinh';
 
         // Map action -> status
         const statusMap = {
@@ -910,5 +843,7 @@ export const resetMockDataAPI = async () => {
   }
   return api.post('/reset');
 };
+
+export const resetAPI = resetMockDataAPI;
 
 export default api;

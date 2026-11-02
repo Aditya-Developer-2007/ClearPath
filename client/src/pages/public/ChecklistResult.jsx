@@ -6,6 +6,7 @@ import { deriveApprovalMetadata, getStatePortalBadge, evaluateEligibleSchemes } 
 import RiskBadge from '../../components/RiskBadge';
 import EmptyState from '../../components/EmptyState';
 import AssistantDrawer from '../../components/AssistantDrawer';
+import StatutorySimulator from '../../components/StatutorySimulator';
 import { Building2, ShieldAlert, FileText, Briefcase, Zap, FileSignature, Landmark, MessageCircle } from 'lucide-react';
 
 const DEPT_ICONS = {
@@ -108,6 +109,9 @@ export default function ChecklistResult() {
             Estimated ~{animatedDays} days
           </p>
         </div>
+
+        {/* Interactive Statutory Threshold Simulator */}
+        <StatutorySimulator baselineBusiness={state?.newBusiness || { sector: 'Textile', city: 'Surat', investmentLakh: 30, employees: 12 }} />
 
         <div className="space-y-8 mb-8">
           {(() => {

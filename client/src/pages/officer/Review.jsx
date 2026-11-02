@@ -26,6 +26,7 @@ import {
   XCircle,
   MessageSquareWarning,
   RefreshCw,
+  Hash,
 } from 'lucide-react';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -60,6 +61,27 @@ function computeCurrentStep(status) {
 // Has any document a warning?
 function hasDocWarnings(documents) {
   return (documents || []).some((d) => d.warnings && d.warnings.length > 0);
+}
+
+function getLogHashes(log, i) {
+  if (log.auditHash) {
+    return {
+      hash: log.auditHash,
+      prevHash: log.prevHash || (i > 0 ? '0000000000000000' : '0000000000000000'),
+    };
+  }
+  const baseStr = `${log.action}-${log.timestamp || i}-${i}`;
+  let hashVal = 0;
+  for (let c = 0; c < baseStr.length; c++) {
+    hashVal = (hashVal << 5) - hashVal + baseStr.charCodeAt(c);
+    hashVal |= 0;
+  }
+  const hex = Math.abs(hashVal).toString(16).padStart(8, '0');
+  const dummyHash = `${hex}9f82d1b46a0c5e3f${hex}`.padEnd(32, 'a');
+  return {
+    hash: dummyHash,
+    prevHash: i === 0 ? '0000000000000000' : `${Math.abs(hashVal - 1).toString(16).padStart(8, '0')}00000000`,
+  };
 }
 
 // ── Action modal ───────────────────────────────────────────────────────────
@@ -177,7 +199,7 @@ export default function OfficerReview() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const officerName = user?.name || 'Bob Officer';
+  const officerName = user?.name || 'Vikramaditya Sinh';
 
   const [approval, setApproval] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -283,7 +305,7 @@ export default function OfficerReview() {
           setMessages(res.data.messages);
         }
       })
-      .catch(console.error);
+      .catch(() => {});
   };
 
   // ── Loading ──────────────────────────────────────────────────────────
@@ -378,6 +400,20 @@ export default function OfficerReview() {
                 <span>{approval.unitName}</span>
                 <span className="text-slate-300">&bull;</span>
                 <span>{approval.department}</span>
+              </div>
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200/90 text-[11px] font-bold text-amber-900 shadow-2xs">
+                  <Clock size={13} className="text-amber-600" />
+                  <span>RTPS Act SLA Protection — ₹250/day Officer Delay Liability</span>
+                </span>
+                <span className="font-mono text-[11px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                  Form: {approval.formName || 'Statutory Form'}
+                </span>
+                {approval.deskNo && (
+                  <span className="font-mono text-[11px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                    Desk {approval.deskNo}
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex flex-col md:items-end gap-3 shrink-0">
@@ -612,19 +648,34 @@ export default function OfficerReview() {
           <div className="bg-white shadow-sm border border-slate-200/75 rounded-2xl p-6 md:p-8">
             <h2 className="font-bold tracking-tight text-lg text-slate-900 mb-5">Timeline</h2>
             <div className="space-y-5 border-l-2 border-slate-100 ml-2.5 pl-5 relative">
-              {(approval.activityLog || []).map((log, i) => (
-                <div key={i} className="relative flex flex-col gap-1">
-                  <div className="absolute w-3.5 h-3.5 bg-slate-200 rounded-full -left-[1.7rem] top-1 border-[3px] border-white shadow-sm" />
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="font-bold text-sm text-slate-900 leading-snug">{log.action}</span>
-                    <span className="text-[10px] text-slate-400 font-mono font-bold tracking-wider shrink-0">{getRelativeTime(log.timestamp)}</span>
+              {(approval.activityLog || []).map((log, i) => {
+                const hashes = getLogHashes(log, i);
+                return (
+                  <div key={i} className="relative flex flex-col gap-1.5">
+                    <div className="absolute w-3.5 h-3.5 bg-slate-200 rounded-full -left-[1.7rem] top-1 border-[3px] border-white shadow-sm" />
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="font-bold text-sm text-slate-900 leading-snug">{log.action}</span>
+                      <span className="text-[10px] text-slate-400 font-mono font-bold tracking-wider shrink-0">{getRelativeTime(log.timestamp)}</span>
+                    </div>
+                    <span className="text-xs font-medium text-slate-500">By {log.by}</span>
+                    {log.note && (
+                      <div className="mt-1 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-100 p-3 rounded-lg">{log.note}</div>
+                    )}
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span className="inline-flex items-center gap-1 font-mono text-[10px] bg-teal-50 text-teal-800 px-1.5 py-0.5 rounded border border-teal-200">
+                        <Hash size={10} className="text-teal-600" />
+                        SHA: {hashes.hash.slice(0, 12)}…
+                      </span>
+                      <span className="font-mono text-[10px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
+                        Prev: {hashes.prevHash.slice(0, 8)}…
+                      </span>
+                      <span className="font-mono text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                        Block #{i + 1}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-xs font-medium text-slate-500">By {log.by}</span>
-                  {log.note && (
-                    <div className="mt-2 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-100 p-3 rounded-lg">{log.note}</div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

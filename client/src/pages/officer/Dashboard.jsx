@@ -47,6 +47,15 @@ function urgencyScore(row) {
 
 const FILTERS = ['All', 'Overdue', 'High risk', 'Needs review'];
 
+const DEPARTMENTS = [
+  { id: 'ALL', label: 'All Jurisdictions' },
+  { id: 'Safety', label: 'Safety & Fire' },
+  { id: 'Environment', label: 'Environment (SPCB)' },
+  { id: 'Industrial', label: 'Industrial (DISH)' },
+  { id: 'Utilities', label: 'Utilities & Telecom' },
+  { id: 'Labour', label: 'Labour' },
+];
+
 // ── Component ──────────────────────────────────────────────────────────────
 export default function OfficerQueue() {
   const { user } = useAuth();
@@ -56,6 +65,7 @@ export default function OfficerQueue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [selectedDept, setSelectedDept] = useState('ALL');
   const now = useSharedTimer();
 
   const load = useCallback(() => {
@@ -93,17 +103,32 @@ export default function OfficerQueue() {
     };
   }, [rows, now]);
 
+  // ── Department counts ──────────────────────────────────────────────────
+  const deptCounts = useMemo(() => {
+    const c = { ALL: rows.length, Safety: 0, Environment: 0, Industrial: 0, Utilities: 0, Labour: 0 };
+    for (const r of rows) {
+      if (c[r.department] !== undefined) c[r.department]++;
+    }
+    return c;
+  }, [rows]);
+
+  // ── Department-filtered subset ─────────────────────────────────────────
+  const deptFilteredRows = useMemo(() => {
+    if (selectedDept === 'ALL') return rows;
+    return rows.filter((r) => r.department === selectedDept);
+  }, [rows, selectedDept]);
+
   // ── Filter counts ──────────────────────────────────────────────────────
   const filterCounts = useMemo(() => ({
-    All: rows.length,
-    Overdue: rows.filter((r) => getSLAInfo(r.slaDeadline, r.status).isOverdue).length,
-    'High risk': rows.filter((r) => r.riskTier === 'high').length,
-    'Needs review': rows.filter((r) => r.warningsCount > 0 && !['approved', 'rejected'].includes(r.status)).length,
-  }), [rows]);
+    All: deptFilteredRows.length,
+    Overdue: deptFilteredRows.filter((r) => getSLAInfo(r.slaDeadline, r.status).isOverdue).length,
+    'High risk': deptFilteredRows.filter((r) => r.riskTier === 'high').length,
+    'Needs review': deptFilteredRows.filter((r) => r.warningsCount > 0 && !['approved', 'rejected'].includes(r.status)).length,
+  }), [deptFilteredRows]);
 
   // ── Sorted + filtered rows ─────────────────────────────────────────────
   const filteredRows = useMemo(() => {
-    let subset = [...rows];
+    let subset = [...deptFilteredRows];
     if (activeFilter === 'Overdue') {
       subset = subset.filter((r) => getSLAInfo(r.slaDeadline, r.status).isOverdue);
     } else if (activeFilter === 'High risk') {
@@ -119,7 +144,7 @@ export default function OfficerQueue() {
       if (timeA !== timeB) return timeA - timeB;
       return String(a.id).localeCompare(String(b.id));
     });
-  }, [rows, activeFilter]);
+  }, [deptFilteredRows, activeFilter]);
 
   const handleReset = () => {
     resetMockDataAPI().then(() => load());
@@ -164,7 +189,7 @@ export default function OfficerQueue() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Review queue</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {user?.name || 'Bob Officer'}, {user?.department || 'Fire Dept'}
+            {user?.name || 'Vikramaditya Sinh'}, {user?.department || 'Fire & Industrial Safety'}
           </p>
         </div>
         {import.meta.env.DEV && (
@@ -190,6 +215,35 @@ export default function OfficerQueue() {
             <div className={`text-4xl font-mono tabular-nums tracking-tight font-bold ${s.accent || 'text-slate-900'}`}>{s.value}</div>
           </div>
         ))}
+      </div>
+
+      {/* Departmental Jurisdiction Filter Bar */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-2.5 shadow-2xs stagger-3">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1 shrink-0">
+            Jurisdiction:
+          </span>
+          {DEPARTMENTS.map((dept) => (
+            <button
+              key={dept.id}
+              onClick={() => setSelectedDept(dept.id)}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-[0.98] ${
+                selectedDept === dept.id
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+              }`}
+            >
+              <span>{dept.label}</span>
+              <span
+                className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+                  selectedDept === dept.id ? 'bg-slate-800 text-teal-300' : 'bg-slate-100 text-slate-500'
+                }`}
+              >
+                {deptCounts[dept.id] || 0}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filter chips */}

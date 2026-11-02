@@ -50,7 +50,6 @@ export function scheduleInspection(id, slotDate) {
 
     if (
       proposal.applicantName === 'Aarav Mehta' ||
-      proposal.applicantName === 'Alice Applicant' ||
       proposal.approvalRequestIds.includes('req2')
     ) {
       if (myApplicationsCache?.applications?.[0]) {

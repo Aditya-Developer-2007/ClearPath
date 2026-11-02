@@ -43,7 +43,20 @@ export const BusinessProvider = ({ children }) => {
       const stored = localStorage.getItem('clearpath_businesses');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const sanitized = parsed.map((b) => {
+            if (b.id === 'b1' || /alice/i.test(b.name || '')) {
+              return {
+                ...INITIAL_BUSINESSES[0],
+                ...b,
+                name: 'Surya Vastra Mills Pvt. Ltd.',
+                address: 'Plot 14, GIDC Sachin, Surat',
+              };
+            }
+            return b;
+          });
+          return sanitized;
+        }
       }
     } catch {
       // fallback
