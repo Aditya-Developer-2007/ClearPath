@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDB, saveDB, resetDB, verifyAuditChainContinuity, appendActivityLog } from '../store/db.js';
+import { getDB, saveDB, verifyAuditChainContinuity, appendActivityLog } from '../store/db.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -98,21 +98,22 @@ router.get('/analytics', protect, (req, res) => {
     const slowest = openReqs.map((r) => {
       const overdueDays = Math.max(0, Math.ceil((currentNow - new Date(r.slaDeadline)) / 86400000));
       const daysTaken = r.lastActionAt
-        ? Math.max(1, Math.round((currentNow - new Date(r.lastActionAt)) / 86400000))
-        : 8;
+        ? Math.max(1, Math.ceil((currentNow - new Date(r.lastActionAt)) / 86400000))
+        : 5;
 
       return {
         id: r.id,
         name: r.name,
         applicantName: r.applicantName || 'Aarav Mehta',
-        dept: r.department || 'General',
+        unitName: r.unitName || 'Surya Vastra Mills Pvt. Ltd., Surat',
+        department: r.department,
+        status: r.status,
+        slaDeadline: r.slaDeadline,
         daysTaken,
         overdueDays,
         escalated: r.escalated || false,
+        statutoryFeeInr: r.statutoryFeeInr || 2500,
       };
-    }).sort((a, b) => {
-      if (b.overdueDays !== a.overdueDays) return b.overdueDays - a.overdueDays;
-      return b.daysTaken - a.daysTaken;
     });
 
     let totalStatutoryFeesTracked = 0;
@@ -141,17 +142,14 @@ router.get('/analytics', protect, (req, res) => {
   }
 });
 
-// POST /api/admin/fast-forward — Simulate time shift and trigger SLA escalations
-router.post('/fast-forward', protect, (req, res) => {
+// POST /api/admin/sla-audit — Real live SLA breach audit & RTPS escalation sweep
+router.post('/sla-audit', protect, (req, res) => {
   try {
-    const days = req.body.days !== undefined ? Number(req.body.days) : 10;
-    if (days <= 0) {
-      return res.json({ shifted: 0, newlyEscalated: [] });
-    }
     const db = getDB();
     const currentNow = new Date();
     const newlyEscalated = [];
-    let shiftedCount = 0;
+    let auditedCount = 0;
+    let breachesCount = 0;
 
     const escalateRequest = (id, department) => {
       const queueRow = db.queue.find((r) => r.id === id);
@@ -171,7 +169,7 @@ router.post('/fast-forward', protect, (req, res) => {
       const dept = department || queueRow?.department || cacheReq?.department || 'Safety';
       const officerName = SENIOR_OFFICERS[dept] || 'Senior Officer';
       const assignedOfficerTitle = `${officerName}, Senior Officer, ${dept}`;
-      const nowIso = new Date().toISOString();
+      const nowIso = currentNow.toISOString();
 
       if (queueRow) {
         queueRow.escalated = true;
@@ -185,33 +183,31 @@ router.post('/fast-forward', protect, (req, res) => {
 
       appendActivityLog(id, {
         action: 'Escalated to Senior Officer (SLA breached)',
-        by: 'System',
+        by: 'System (RTPS SLA Audit)',
         timestamp: nowIso,
-        note: `SLA deadline breached. Reassigned to ${assignedOfficerTitle}.`,
+        note: `Statutory SLA breached under State Public Services Act. Reassigned to ${assignedOfficerTitle}.`,
       });
 
       if (!db.messages[id]) db.messages[id] = [];
       db.messages[id].push({
         id: `msg-sys-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
         senderRole: 'system',
-        senderName: 'System',
-        text: `SLA deadline breached. Request escalated to ${assignedOfficerTitle}.`,
+        senderName: 'Statutory SLA Engine',
+        text: `Statutory SLA deadline breached under Right to Public Services Act. Request escalated to ${assignedOfficerTitle}.`,
         timestamp: nowIso,
       });
 
       return true;
     };
 
-    // 1. Shift open requests in queue
+    // 1. Audit queue items
     db.queue.forEach((row) => {
       if (!['approved', 'rejected'].includes(row.status)) {
-        const oldMs = row.slaDeadline ? new Date(row.slaDeadline).getTime() : (Date.now() + 14 * 86400000);
-        if (!isNaN(oldMs)) {
-          const newDeadline = new Date(oldMs - days * 86400000).toISOString();
-          row.slaDeadline = newDeadline;
-          shiftedCount++;
-
-          if (new Date(newDeadline) < currentNow && row.escalated === false) {
+        auditedCount++;
+        const deadline = row.slaDeadline ? new Date(row.slaDeadline) : null;
+        if (deadline && deadline < currentNow) {
+          breachesCount++;
+          if (!row.escalated) {
             const didEscalate = escalateRequest(row.id, row.department);
             if (didEscalate && !newlyEscalated.includes(row.id)) {
               newlyEscalated.push(row.id);
@@ -221,29 +217,26 @@ router.post('/fast-forward', protect, (req, res) => {
       }
     });
 
-    // 2. Sync to applicant store
+    // 2. Audit application approvalRequests
     db.applications.forEach((app) => {
       (app.approvalRequests || []).forEach((req) => {
-        const queueRow = db.queue.find((q) => q.id === req.id);
-        if (queueRow) {
-          req.slaDeadline = queueRow.slaDeadline;
-          req.escalated = queueRow.escalated;
-          if (queueRow.escalated) {
-            req.assignedOfficerName = queueRow.assignedOfficerName;
-          }
-        } else if (!['approved', 'rejected'].includes(req.status)) {
-          const oldMs = req.slaDeadline
-            ? new Date(req.slaDeadline).getTime()
-            : (Date.now() + (req.slaDays || 21) * 86400000);
-          if (!isNaN(oldMs)) {
-            const newDeadline = new Date(oldMs - days * 86400000).toISOString();
-            req.slaDeadline = newDeadline;
-            shiftedCount++;
-
-            if (new Date(newDeadline) < currentNow && req.escalated === false) {
-              const didEscalate = escalateRequest(req.id, req.department);
-              if (didEscalate && !newlyEscalated.includes(req.id)) {
-                newlyEscalated.push(req.id);
+        if (!['approved', 'rejected'].includes(req.status)) {
+          const queueRow = db.queue.find((q) => q.id === req.id);
+          if (queueRow) {
+            req.slaDeadline = queueRow.slaDeadline;
+            req.escalated = queueRow.escalated;
+            if (queueRow.escalated) {
+              req.assignedOfficerName = queueRow.assignedOfficerName;
+            }
+          } else {
+            const deadline = req.slaDeadline ? new Date(req.slaDeadline) : null;
+            if (deadline && deadline < currentNow) {
+              breachesCount++;
+              if (!req.escalated) {
+                const didEscalate = escalateRequest(req.id, req.department);
+                if (didEscalate && !newlyEscalated.includes(req.id)) {
+                  newlyEscalated.push(req.id);
+                }
               }
             }
           }
@@ -252,7 +245,17 @@ router.post('/fast-forward', protect, (req, res) => {
     });
 
     saveDB();
-    res.json({ shifted: shiftedCount, newlyEscalated });
+    const auditIntegrity = verifyAuditChainContinuity();
+
+    res.json({
+      success: true,
+      auditedCount,
+      breachesCount,
+      escalatedCount: newlyEscalated.length,
+      newlyEscalated,
+      intact: auditIntegrity.intact,
+      timestamp: currentNow.toISOString(),
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -287,7 +290,6 @@ router.post('/inspections/schedule', protect, (req, res) => {
 
     if (
       proposal.applicantName === 'Aarav Mehta' ||
-      proposal.applicantName === 'Alice Applicant' ||
       proposal.approvalRequestIds.includes('req2')
     ) {
       if (db.applications[0]) {
@@ -301,16 +303,6 @@ router.post('/inspections/schedule', protect, (req, res) => {
 
     saveDB();
     res.json({ ...proposal, inspection: proposal });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// POST /api/admin/reset & POST /api/reset — Restore initial Golden Demo state
-router.post('/reset', protect, (req, res) => {
-  try {
-    resetDB();
-    res.json({ success: true, message: 'Database reset to golden demo state' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

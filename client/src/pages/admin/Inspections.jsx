@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getAdminInspectionsAPI, scheduleInspectionAPI, resetMockDataAPI } from '../../lib/api';
+import { getAdminInspectionsAPI, scheduleInspectionAPI } from '../../lib/api';
 import SkeletonCard from '../../components/SkeletonCard';
 import EmptyState from '../../components/EmptyState';
 import {
@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Calendar,
   Building2,
-  RotateCcw,
   Sparkles,
 } from 'lucide-react';
 
@@ -49,19 +48,12 @@ export default function AdminInspections() {
     setSchedulingId(id);
     try {
       await scheduleInspectionAPI({ id, slotDate });
-      // Re-fetch to synchronize state derived from store
       await load();
     } catch {
       // ignore
     } finally {
       setSchedulingId(null);
     }
-  };
-
-  const handleReset = async () => {
-    setLoading(true);
-    await resetMockDataAPI();
-    await load();
   };
 
   if (loading) {
@@ -108,14 +100,6 @@ export default function AdminInspections() {
             Group multi-department site visits into single unified inspections to reduce business disruption.
           </p>
         </div>
-        {import.meta.env.DEV && (
-          <button
-            onClick={handleReset}
-            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300 transition-all duration-75 active:scale-[0.97]"
-          >
-            <RotateCcw size={14} strokeWidth={2.5} /> Reset demo
-          </button>
-        )}
       </div>
 
       {/* Explainer banner */}

@@ -84,7 +84,6 @@ router.post('/', protect, (req, res) => {
       tenders: tenderGate.tenders,
     });
   } catch (error) {
-    console.error('[Application Route Error]:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -93,43 +92,31 @@ router.post('/', protect, (req, res) => {
 router.get('/mine', protect, (req, res) => {
   try {
     const db = getDB();
-    const primaryUnit = db.businesses[0] || db.applications[0] || {};
+    const userId = req.user?.id;
+
+    let userApps = db.applications;
+    let userBiz = db.businesses;
+
+    if (userId) {
+      const filteredApps = db.applications.filter((a) => a.userId === userId);
+      const filteredBiz = db.businesses.filter((b) => b.userId === userId);
+      if (filteredApps.length > 0 || filteredBiz.length > 0) {
+        userApps = filteredApps;
+        userBiz = filteredBiz;
+      }
+    }
+
+    const primaryUnit = userBiz[0] || userApps[0] || db.businesses[0] || {};
     const schemes = evaluateEligibleSchemes(primaryUnit);
-    const activeApprovals = db.applications[0]?.approvalRequests || [];
+    const activeApprovals = userApps[0]?.approvalRequests || db.applications[0]?.approvalRequests || [];
     const tenderGate = evaluateGovernmentTenders(primaryUnit, activeApprovals);
 
     res.json({
-      applications: db.applications,
-      businesses: db.businesses,
+      applications: userApps,
+      businesses: userBiz,
       schemes,
       tenderGate,
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// POST /api/applications/unlock-tenders-demo — Rapid testing helper to approve all clearances
-router.post('/unlock-tenders-demo', protect, (req, res) => {
-  try {
-    const db = getDB();
-    const primaryApp = db.applications[0];
-    if (primaryApp && Array.isArray(primaryApp.approvalRequests)) {
-      primaryApp.approvalRequests.forEach((reqItem) => {
-        reqItem.status = 'approved';
-        reqItem.lastActionAt = new Date().toISOString();
-      });
-      db.queue.forEach((qRow) => {
-        if (qRow.id === 'req2') {
-          qRow.status = 'approved';
-          qRow.lastActionAt = new Date().toISOString();
-        }
-      });
-      saveDB();
-    }
-    const primaryUnit = db.businesses[0] || primaryApp || {};
-    const tenderGate = evaluateGovernmentTenders(primaryUnit, primaryApp?.approvalRequests || []);
-    res.json({ success: true, tenderGate });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

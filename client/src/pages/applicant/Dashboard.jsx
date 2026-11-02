@@ -307,12 +307,12 @@ export default function ApplicantDashboard() {
                       type="button"
                       onClick={() => {
                         setSwitcherOpen(false);
-                        navigate('/start');
+                        navigate('/wizard');
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
                     >
                       <Plus className="w-4 h-4 shrink-0" />
-                      <span>+ Add Unit</span>
+                      <span>+ Register New Industrial Unit</span>
                     </button>
                   </div>
                 </div>
@@ -320,8 +320,16 @@ export default function ApplicantDashboard() {
             </div>
           </div>
 
-          {/* Metadata Badges */}
+          {/* Action & Metadata Badges */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => navigate('/wizard')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-all active:scale-[0.98]"
+            >
+              <Plus size={14} strokeWidth={2.5} />
+              <span>+ Register New Industrial Unit</span>
+            </button>
             <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm text-[11px] font-semibold text-slate-700">
               {activeBusiness
                 ? `${activeBusiness.city}, ${activeBusiness.state} • ${activeBusiness.sector}`

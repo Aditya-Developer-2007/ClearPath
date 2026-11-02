@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getOfficerQueueAPI, resetMockDataAPI } from '../../lib/api';
+import { getOfficerQueueAPI } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
-import useSharedTimer from '../../hooks/useSharedTimer';
 import EmptyState from '../../components/EmptyState';
 import SkeletonCard from '../../components/SkeletonCard';
 import StatusBadge from '../../components/StatusBadge';
@@ -11,7 +10,6 @@ import {
   AlertTriangle,
   ArrowRight,
   RefreshCw,
-  RotateCcw,
   ShieldAlert,
 } from 'lucide-react';
 
@@ -25,59 +23,46 @@ function getSLAInfo(deadline, status) {
     return { text: 'OVERDUE', color: 'text-rose-700 font-semibold', chip: 'bg-rose-50 text-rose-800 border border-rose-200/80 font-semibold', isOverdue: true };
   }
   if (diffDays === 0) {
-    return { text: 'Due today', color: 'text-amber-700 font-semibold', chip: 'bg-amber-50 text-amber-800 border border-amber-200/80 font-semibold', isOverdue: false };
+    return { text: 'Due today', color: 'text-amber-700 font-semibold', chip: 'bg-amber-50 text-amber-800 border border-amber-200/80', isOverdue: false };
   }
   if (diffDays <= 2) {
-    return { text: `${diffDays}d left`, color: 'text-amber-700 font-semibold', chip: 'bg-amber-50 text-amber-800 border border-amber-200/80 font-semibold', isOverdue: false };
+    return { text: `${diffDays}d left`, color: 'text-amber-700 font-semibold', chip: 'bg-amber-50 text-amber-800 border border-amber-200/80', isOverdue: false };
   }
-  return { text: `${diffDays}d left`, color: 'text-slate-700', chip: 'bg-slate-50 text-slate-700 border border-slate-200/80', isOverdue: false };
+  return { text: `${diffDays}d left`, color: 'text-slate-700', chip: 'bg-slate-100 text-slate-800 border border-slate-200/80', isOverdue: false };
 }
 
-function urgencyScore(row) {
-  if (['approved', 'rejected'].includes(row.status)) return 0;
-  const sla = getSLAInfo(row.slaDeadline, row.status);
-  if (sla.isOverdue && row.escalated) return 100;
-  if (sla.isOverdue) return 90;
-  if (row.escalated) return 80;
-  const diffDays = Math.ceil((new Date(row.slaDeadline) - Date.now()) / 86400000);
-  if (diffDays <= 1) return 70;
-  if (diffDays <= 2) return 60;
-  return Math.max(10, 50 - diffDays);
-}
-
-const FILTERS = ['All', 'Overdue', 'High risk', 'Needs review'];
+const FILTERS = ['All', 'Needs action', 'High risk', 'Pending', 'Due today', 'Overdue'];
 
 const DEPARTMENTS = [
-  { id: 'ALL', label: 'All Jurisdictions' },
+  { id: 'all', label: 'All Jurisdictions' },
   { id: 'Safety', label: 'Safety & Fire' },
-  { id: 'Environment', label: 'Environment (SPCB)' },
-  { id: 'Industrial', label: 'Industrial (DISH)' },
-  { id: 'Utilities', label: 'Utilities & Telecom' },
+  { id: 'Environment', label: 'Environment' },
+  { id: 'Industrial', label: 'Industrial / DISH' },
   { id: 'Labour', label: 'Labour' },
+  { id: 'Utilities', label: 'Utilities & Power' },
 ];
 
-// ── Component ──────────────────────────────────────────────────────────────
-export default function OfficerQueue() {
+export default function OfficerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [rows, setRows] = useState([]);
+  const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
-  const [selectedDept, setSelectedDept] = useState('ALL');
-  const now = useSharedTimer();
+  const [selectedDept, setSelectedDept] = useState('all');
 
   const load = useCallback(() => {
     setLoading(true);
-    setError(false);
     getOfficerQueueAPI()
       .then((res) => {
-        setRows(res.data);
-        setLoading(false);
+        setQueue(res.data);
+        setError(false);
       })
       .catch(() => {
         setError(true);
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, []);
@@ -86,69 +71,112 @@ export default function OfficerQueue() {
     load();
   }, [load]);
 
-  // ── Derived stats ──────────────────────────────────────────────────────
+  // ── Stat calculations ──────────────────────────────────────────────────────
   const stats = useMemo(() => {
-    const active = rows.filter((r) => !['approved', 'rejected'].includes(r.status));
-    const overdue = active.filter((r) => new Date(r.slaDeadline) < now);
-    const dueToday = active.filter((r) => {
-      const d = Math.ceil((new Date(r.slaDeadline) - now) / 86400000);
-      return d >= 0 && d <= 0;
-    });
-    const escalated = rows.filter((r) => r.escalated);
-    return {
-      pending: active.length,
-      dueToday: dueToday.length,
-      overdue: overdue.length,
-      escalated: escalated.length,
-    };
-  }, [rows, now]);
+    const pending = queue.filter((r) => !['approved', 'rejected'].includes(r.status)).length;
+    const dueToday = queue.filter((r) => {
+      if (['approved', 'rejected'].includes(r.status)) return false;
+      const d = Math.ceil((new Date(r.slaDeadline) - Date.now()) / 86400000);
+      return d === 0;
+    }).length;
+    const overdue = queue.filter((r) => {
+      if (['approved', 'rejected'].includes(r.status)) return false;
+      return new Date(r.slaDeadline) < Date.now();
+    }).length;
+    const escalated = queue.filter((r) => r.escalated).length;
+    return { pending, dueToday, overdue, escalated };
+  }, [queue]);
 
-  // ── Department counts ──────────────────────────────────────────────────
+  // ── Department counts ──────────────────────────────────────────────────────
   const deptCounts = useMemo(() => {
-    const c = { ALL: rows.length, Safety: 0, Environment: 0, Industrial: 0, Utilities: 0, Labour: 0 };
-    for (const r of rows) {
-      if (c[r.department] !== undefined) c[r.department]++;
-    }
-    return c;
-  }, [rows]);
+    const counts = { all: queue.length };
+    DEPARTMENTS.forEach((d) => {
+      if (d.id !== 'all') {
+        counts[d.id] = queue.filter((r) => {
+          if (d.id === 'Safety') return r.department === 'Safety' || r.department === 'Fire Dept';
+          return r.department === d.id;
+        }).length;
+      }
+    });
+    return counts;
+  }, [queue]);
 
-  // ── Department-filtered subset ─────────────────────────────────────────
+  // ── Filtered by department ─────────────────────────────────────────────────
   const deptFilteredRows = useMemo(() => {
-    if (selectedDept === 'ALL') return rows;
-    return rows.filter((r) => r.department === selectedDept);
-  }, [rows, selectedDept]);
+    if (selectedDept === 'all') return queue;
+    return queue.filter((r) => {
+      if (selectedDept === 'Safety') return r.department === 'Safety' || r.department === 'Fire Dept';
+      return r.department === selectedDept;
+    });
+  }, [queue, selectedDept]);
 
-  // ── Filter counts ──────────────────────────────────────────────────────
-  const filterCounts = useMemo(() => ({
-    All: deptFilteredRows.length,
-    Overdue: deptFilteredRows.filter((r) => getSLAInfo(r.slaDeadline, r.status).isOverdue).length,
-    'High risk': deptFilteredRows.filter((r) => r.riskTier === 'high').length,
-    'Needs review': deptFilteredRows.filter((r) => r.warningsCount > 0 && !['approved', 'rejected'].includes(r.status)).length,
-  }), [deptFilteredRows]);
+  // ── Filter counts for chips ────────────────────────────────────────────────
+  const filterCounts = useMemo(() => {
+    return {
+      All: deptFilteredRows.length,
+      'Needs action': deptFilteredRows.filter((r) => r.status === 'submitted' || r.warningsCount > 0 || r.escalated).length,
+      'High risk': deptFilteredRows.filter((r) => r.riskTier === 'high').length,
+      Pending: deptFilteredRows.filter((r) => !['approved', 'rejected'].includes(r.status)).length,
+      'Due today': deptFilteredRows.filter((r) => {
+        if (['approved', 'rejected'].includes(r.status)) return false;
+        const d = Math.ceil((new Date(r.slaDeadline) - Date.now()) / 86400000);
+        return d === 0;
+      }).length,
+      Overdue: deptFilteredRows.filter((r) => {
+        if (['approved', 'rejected'].includes(r.status)) return false;
+        return new Date(r.slaDeadline) < Date.now();
+      }).length,
+    };
+  }, [deptFilteredRows]);
 
-  // ── Sorted + filtered rows ─────────────────────────────────────────────
+  // ── Filtered rows ──────────────────────────────────────────────────────────
   const filteredRows = useMemo(() => {
-    let subset = [...deptFilteredRows];
-    if (activeFilter === 'Overdue') {
-      subset = subset.filter((r) => getSLAInfo(r.slaDeadline, r.status).isOverdue);
-    } else if (activeFilter === 'High risk') {
-      subset = subset.filter((r) => r.riskTier === 'high');
-    } else if (activeFilter === 'Needs review') {
-      subset = subset.filter((r) => r.warningsCount > 0 && !['approved', 'rejected'].includes(r.status));
+    let list = deptFilteredRows;
+    switch (activeFilter) {
+      case 'Needs action':
+        list = list.filter((r) => r.status === 'submitted' || r.warningsCount > 0 || r.escalated);
+        break;
+      case 'High risk':
+        list = list.filter((r) => r.riskTier === 'high');
+        break;
+      case 'Pending':
+        list = list.filter((r) => !['approved', 'rejected'].includes(r.status));
+        break;
+      case 'Due today':
+        list = list.filter((r) => {
+          if (['approved', 'rejected'].includes(r.status)) return false;
+          const d = Math.ceil((new Date(r.slaDeadline) - Date.now()) / 86400000);
+          return d === 0;
+        });
+        break;
+      case 'Overdue':
+        list = list.filter((r) => {
+          if (['approved', 'rejected'].includes(r.status)) return false;
+          return new Date(r.slaDeadline) < Date.now();
+        });
+        break;
+      default:
+        break;
     }
-    return subset.sort((a, b) => {
-      const scoreDiff = urgencyScore(b) - urgencyScore(a);
-      if (scoreDiff !== 0) return scoreDiff;
-      const timeA = new Date(a.slaDeadline).getTime();
-      const timeB = new Date(b.slaDeadline).getTime();
-      if (timeA !== timeB) return timeA - timeB;
+
+    return [...list].sort((a, b) => {
+      const aDone = ['approved', 'rejected'].includes(a.status);
+      const bDone = ['approved', 'rejected'].includes(b.status);
+      if (aDone !== bDone) return aDone ? 1 : -1;
+
+      if (a.escalated !== b.escalated) return (b.escalated ? 1 : 0) - (a.escalated ? 1 : 0);
+
+      const aOverdue = new Date(a.slaDeadline) < Date.now();
+      const bOverdue = new Date(b.slaDeadline) < Date.now();
+      if (aOverdue !== bOverdue) return (bOverdue ? 1 : 0) - (aOverdue ? 1 : 0);
+
+      const aTime = a.slaDeadline ? new Date(a.slaDeadline).getTime() : 0;
+      const bTime = b.slaDeadline ? new Date(b.slaDeadline).getTime() : 0;
+      if (aTime !== bTime) return aTime - bTime;
+
       return String(a.id).localeCompare(String(b.id));
     });
   }, [deptFilteredRows, activeFilter]);
-
-  const handleReset = () => {
-    resetMockDataAPI().then(() => load());
-  };
 
   // ── Loading ────────────────────────────────────────────────────────────
   if (loading) {
@@ -183,7 +211,6 @@ export default function OfficerQueue() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap stagger-1">
         <div>
@@ -192,14 +219,6 @@ export default function OfficerQueue() {
             {user?.name || 'Vikramaditya Sinh'}, {user?.department || 'Fire & Industrial Safety'}
           </p>
         </div>
-        {import.meta.env.DEV && (
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <RotateCcw size={11} /> Reset demo
-          </button>
-        )}
       </div>
 
       {/* Stat strip */}

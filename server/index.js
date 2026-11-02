@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { initAI } from './services/aiService.js';
-import { getDB, resetDB } from './store/db.js';
+import { getDB } from './store/db.js';
 
 import authRoutes from './routes/authRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
@@ -47,6 +47,10 @@ app.post('/api/login', (req, res, next) => {
   req.url = '/login';
   authRoutes(req, res, next);
 });
+app.post('/api/register', (req, res, next) => {
+  req.url = '/register';
+  authRoutes(req, res, next);
+});
 
 app.use('/api/public', publicRoutes);
 app.use('/api/applications', applicationRoutes);
@@ -54,14 +58,9 @@ app.use('/api/approvals', approvalRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Direct convenience routes
-app.post('/api/reset', (req, res) => {
-  resetDB();
-  res.json({ success: true, message: 'Database reset to golden demo state' });
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime() });
+// Health check endpoint (replaces demo reset in production)
+app.all(['/api/reset', '/api/health'], (req, res) => {
+  res.json({ status: 'ok', production: true, uptime: process.uptime() });
 });
 
 // Static uploads directory

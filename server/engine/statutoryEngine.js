@@ -143,7 +143,7 @@ export function normalizeBusinessInput(input = {}) {
   };
 }
 
-// ── 3. Dynamic Statutory Fee Calculator ───────────────────────────────────────
+
 export function computeStatutoryFee(code, ctx = {}) {
   const emp = Number(ctx.employees) || 12;
   const haz = Boolean(ctx.hazardous);

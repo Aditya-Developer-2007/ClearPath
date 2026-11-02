@@ -80,14 +80,40 @@ router.get('/:id', protect, (req, res) => {
 const handleDocumentUpload = (req, res) => {
   try {
     const { id } = req.params;
-    const { docType, fileName, declaredFields } = req.body;
+    const { docType, fileName, fileSize, mimeType, fileData, declaredFields } = req.body;
     const db = getDB();
 
     const composite = getApprovalComposite(id);
-    const masterProfile = composite?.applicantProfile || db.applicantProfiles[id] || db.businesses[0] || {
-      address: DEMO_PROFILE_ADDRESS,
-      pan: 'AABCS1429B',
-    };
+    let masterProfile = composite?.applicantProfile || db.applicantProfiles[id];
+    if (!masterProfile) {
+      for (const app of db.applications) {
+        if ((app.approvalRequests || []).some((r) => r.id === id)) {
+          const biz = (db.businesses || []).find((b) => b.id === app.businessId || b.id === app.id);
+          if (biz) {
+            masterProfile = {
+              name: biz.name,
+              address: biz.address,
+              pan: biz.pan,
+              gstin: biz.gstin,
+              udyam: biz.udyam,
+              city: biz.city,
+              state: biz.state,
+              sector: biz.sector,
+              investment: biz.investment,
+              employees: biz.employees,
+              unitSize: biz.unitSize,
+            };
+          }
+          break;
+        }
+      }
+    }
+    if (!masterProfile) {
+      masterProfile = db.businesses[0] || {
+        address: DEMO_PROFILE_ADDRESS,
+        pan: 'AABCS1429B',
+      };
+    }
     const existingDocs = db.documents[id] || [];
 
     const verification = verifyDocumentSubmission(
@@ -96,7 +122,8 @@ const handleDocumentUpload = (req, res) => {
       fileName,
       declaredFields,
       masterProfile,
-      existingDocs
+      existingDocs,
+      fileData
     );
 
     const warnings = verification.warnings;
@@ -107,6 +134,9 @@ const handleDocumentUpload = (req, res) => {
       docType,
       label: docType,
       fileName: fileName || `${docType.toLowerCase().replace(/\s+/g, '_')}.pdf`,
+      fileSize: fileSize || '245 KB',
+      mimeType: mimeType || 'application/pdf',
+      uploadedAt: new Date().toISOString(),
       validated: warnings.length === 0,
       declaredFields: declaredFields
         ? { ...declaredFields }
@@ -207,15 +237,15 @@ router.patch('/:id/action', protect, (req, res) => {
       saveDB();
     }
 
-    const qRow = db.queue.find((r) => r.id === id);
+    const comp = getApprovalComposite(id);
 
     res.json({
       id,
       status: newStatus,
       lastActionAt: ts,
-      activityLog: db.activityLogs[id],
+      activityLog: db.activityLogs[id] || comp?.activityLog || [],
       messages: db.messages[id] || [],
-      certificateMeta: qRow?.certificateMeta || null,
+      certificateMeta: comp?.certificateMeta || null,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

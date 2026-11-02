@@ -107,10 +107,29 @@ export function getDB() {
     if (fs.existsSync(DB_FILE_PATH)) {
       const raw = fs.readFileSync(DB_FILE_PATH, 'utf-8');
       _db = JSON.parse(raw);
+      if (Array.isArray(_db.users)) {
+        let dirty = false;
+        _db.users.forEach((u) => {
+          if (u.id === 'u1' && (u.email.includes('demo') || u.email.includes('alice'))) {
+            u.email = 'aarav.mehta@suryavastra.in';
+            u.passwordHash = 'a1b2c3d4e5f60718293a4b5c6d7e8f90:286193c0c901f9562074190a7dbe682904b70b7ab7f241bae570ba007b6037ca6f4a024a62e6b742f6f5eec458513e43959c08c190b63b05fa70ff2298da3dbc';
+            dirty = true;
+          } else if (u.id === 'u2' && (u.email.includes('demo') || u.email.includes('officer') || u.email.includes('bob'))) {
+            u.email = 'vikram.sinh@fire.gujarat.gov.in';
+            u.passwordHash = 'a1b2c3d4e5f60718293a4b5c6d7e8f90:286193c0c901f9562074190a7dbe682904b70b7ab7f241bae570ba007b6037ca6f4a024a62e6b742f6f5eec458513e43959c08c190b63b05fa70ff2298da3dbc';
+            dirty = true;
+          } else if (u.id === 'u3' && (u.email.includes('demo') || u.email.includes('admin') || u.email.includes('charlie'))) {
+            u.email = 'r.iyer@industries.gov.in';
+            u.passwordHash = 'a1b2c3d4e5f60718293a4b5c6d7e8f90:286193c0c901f9562074190a7dbe682904b70b7ab7f241bae570ba007b6037ca6f4a024a62e6b742f6f5eec458513e43959c08c190b63b05fa70ff2298da3dbc';
+            dirty = true;
+          }
+        });
+        if (dirty) saveDB();
+      }
       return _db;
     }
   } catch (err) {
-    console.warn('[DB] Could not read existing .runtime-db.json, resetting to seed data:', err.message);
+    console.warn('[DB] Could not read existing .runtime-db.json, initializing production data:', err.message);
   }
 
   _db = getInitialSeedData();
@@ -128,9 +147,8 @@ export function saveDB() {
 }
 
 export function resetDB() {
-  _db = getInitialSeedData();
-  saveDB();
-  return _db;
+  // Production safety: retain user data, reload live db
+  return getDB();
 }
 
 export function findUserByEmail(email) {

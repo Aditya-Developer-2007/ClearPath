@@ -1,7 +1,9 @@
 import crypto from 'crypto';
 
-export function computeDocHash(docType, fileName, declaredFields = {}) {
-  const content = `${docType || ''}:${fileName || ''}:${JSON.stringify(declaredFields || {})}`;
+export function computeDocHash(docType, fileName, declaredFields = {}, fileData = '') {
+  const content = fileData
+    ? `${docType || ''}:${fileName || ''}:${fileData.slice(0, 2048)}:${JSON.stringify(declaredFields || {})}`
+    : `${docType || ''}:${fileName || ''}:${JSON.stringify(declaredFields || {})}`;
   return crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
 }
 
@@ -19,7 +21,7 @@ export function extractPlotNumber(addr = '') {
   return match ? match[1] : null;
 }
 
-export function verifyDocumentSubmission(approval, docType, fileName, declaredFields = {}, masterProfile = {}, existingDocs = []) {
+export function verifyDocumentSubmission(approval, docType, fileName, declaredFields = {}, masterProfile = {}, existingDocs = [], fileData = '') {
   const warnings = [];
   const registeredAddress = masterProfile?.address || 'Plot 14, GIDC Sachin, Surat';
   const registeredPan = masterProfile?.pan || 'AABCS1429B';
@@ -109,7 +111,7 @@ export function verifyDocumentSubmission(approval, docType, fileName, declaredFi
     }
   }
 
-  const docHash = computeDocHash(docType, fileName, declaredFields);
+  const docHash = computeDocHash(docType, fileName, declaredFields, fileData);
 
   return {
     ok: warnings.length === 0,

@@ -20,15 +20,15 @@ export const AuthProvider = ({ children }) => {
 
           if (nameLower.includes('alice') || emailLower.includes('alice')) {
             parsed.name = 'Aarav Mehta';
-            parsed.email = 'applicant@demo.com';
+            parsed.email = 'aarav.mehta@suryavastra.in';
             migrated = true;
           } else if (nameLower.includes('bob') || emailLower.includes('bob')) {
             parsed.name = 'Vikramaditya Sinh';
-            parsed.email = 'officer@demo.com';
+            parsed.email = 'vikram.sinh@fire.gujarat.gov.in';
             migrated = true;
           } else if (nameLower.includes('charlie') || nameLower.includes('carol') || emailLower.includes('charlie')) {
             parsed.name = 'Rajeshwari Iyer, IAS';
-            parsed.email = 'admin@demo.com';
+            parsed.email = 'r.iyer@industries.gov.in';
             migrated = true;
           }
 
@@ -62,8 +62,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+      {children}
     </AuthContext.Provider>
   );
 };
